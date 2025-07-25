@@ -1,4 +1,4 @@
-use crate::{ast::{IntermediateToken, Token}, parsers::{CIEvalError, CILexerError}};
+use crate::{ast::{AstNode, IntermediateToken, Token}, parsers::{CIEvalError, CILexerError}};
 
 #[derive(Debug, thiserror::Error)]
 pub enum CIParserError {
@@ -14,8 +14,8 @@ pub enum CIParserError {
     #[error("UnexpectedToken: {0:?}")]
     UnexpectedToken(Box<IntermediateToken>),
 
-    #[error("Too many parameters in Node: {0}")]
-    NodeFull(usize),
+    #[error("Too many parameters in Node: {0:?}")]
+    NodeFull(Vec<AstNode>),
 
     #[error("[Internal] parsing not done")]
     ParsingUnfinished,
@@ -100,8 +100,8 @@ pub struct SeqParsers<A, B> {
 }
 impl<A, B> Parser for SeqParsers<A, B>
 where
-    A: Parser + Default,
-    B: Parser<InputNode = A::OutputNode> + Default
+    A: Parser,
+    B: Parser<InputNode = A::OutputNode>
 {
     type InputNode = A::InputNode;
     type OutputNode = B::OutputNode;
@@ -112,3 +112,8 @@ where
     }
 }
 
+impl<A, B> SeqParsers<A, B> {
+    pub fn new(a: A, b: B) -> SeqParsers<A, B> {
+        SeqParsers { a, b }
+    }
+}

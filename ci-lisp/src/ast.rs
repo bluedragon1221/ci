@@ -2,12 +2,13 @@ use std::rc::Rc;
 
 use crate::parsers::CIEvalError;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Value {
     Int(i32),
     String(String), // "var"
     Symbol(String), // var
     Ident(String), // 'var
+    True,
     Nil
 }
 
@@ -34,6 +35,8 @@ impl Token {
         } else if word.chars().nth(0).unwrap() == '\'' {
             let without_quote = &word[1..];
             Token::Value(Value::Ident(without_quote.to_string()))
+        } else if word == "t" {
+            Token::Value(Value::True)
         } else {
             Token::Value(Value::Symbol(word.to_string()))
         }

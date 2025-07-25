@@ -42,7 +42,7 @@ impl ParserStepState {
                 car: Box::new(std::mem::take(&mut self.cur_node[0])),
                 cdr: Box::new(std::mem::take(&mut self.cur_node[1]))
             }),
-            _ => return Err(CIParserError::NodeFull(self.cur_node.len()))
+            _ => return Err(CIParserError::NodeFull(self.cur_node.clone()))
         };
 
         self.new_tokens.push(token);
@@ -53,7 +53,7 @@ impl ParserStepState {
 
     fn flush_cur_fn(&mut self) -> Result<(), CIParserError> {
         if self.cur_fn.len() != 2 {
-            return Err(CIParserError::NodeFull(self.cur_fn.len()));
+            return Err(CIParserError::NodeFull(self.cur_fn.clone()));
         }
 
         if let AstNode::Value(Value::Ident(ident)) = &self.cur_fn[0] {

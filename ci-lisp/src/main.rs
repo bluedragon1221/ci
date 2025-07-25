@@ -1,4 +1,4 @@
-use ci_lisp::{parsers::CIParser, repl::{CITermRepl, Repl}};
+use ci_lisp::{parsers::{CILexer, CIParser}, repl::{CITermRepl, Repl}};
 
 fn main() {
     type R = CITermRepl<CIParser>;

@@ -13,5 +13,19 @@ pub use ci_final_parser::CIFinalParser;
 mod ci_evaluator;
 pub use ci_evaluator::{CIEvalError, CIEvaluator};
 
-use crate::parser_types::SeqParsers;
-pub type CIParser = SeqParsers<SeqParsers<SeqParsers<CILexer, CIIntermediateTokenizer>, CIFinalParser>, CIEvaluator>;
+// ---
+
+use crate::{ast::AstNode, parser_types::SeqParsers};
+
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
+
+pub type CIOnlyParsing = SeqParsers<SeqParsers<CILexer, CIIntermediateTokenizer>, CIFinalParser>;
+pub type CIParser = SeqParsers<CIOnlyParsing, CIEvaluator>;
+
+pub fn ci_parser_with_env(custom_env: Rc<RefCell<HashMap<String, AstNode>>>) -> CIParser {
+    SeqParsers::new(
+        SeqParsers::<SeqParsers<CILexer, CIIntermediateTokenizer>, CIFinalParser>::default(),
+        CIEvaluator::new(custom_env)
+    )
+}
+

@@ -52,6 +52,9 @@ impl CILexer {
             ' ' if !state.in_string => {
                 state.flush_word()
             },
+            '\n' if !state.in_string => {
+                state.flush_word()
+            },
             '"' => {
                 if !state.in_string {
                     // beginning quote
