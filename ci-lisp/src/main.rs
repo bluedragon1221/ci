@@ -1,12 +1,7 @@
-use ci_lisp::{
-    lexer::CISugarLexer, parser::CICoreParser, repl::{CITermRepl, Repl}
-};
+use ci_lisp::{parsers::CIParser, repl::{CITermRepl, Repl}};
 
 fn main() {
-    type R = CITermRepl<
-        CISugarLexer,
-        CICoreParser
-    >;
+    type R = CITermRepl<CIParser>;
 
     R::default().r#loop()
 }

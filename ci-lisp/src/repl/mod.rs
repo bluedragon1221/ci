@@ -1,13 +1,12 @@
+use crate::parser_types::CIParserError;
+
 #[derive(Debug, thiserror::Error)]
 pub enum CIReplError {
     #[error("IOError: {0}")]
     IOError(#[from] std::io::Error),
 
-    #[error("LexerError: {0}")]
-    LexerError(#[from] crate::lexer::CILexerError),
-
     #[error("ParserError: {0}")]
-    ParserError(#[from] crate::parser::CIParserError)
+    ParserError(#[from] CIParserError)
 }
 
 pub enum ReadSignal<InputType> {

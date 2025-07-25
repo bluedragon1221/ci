@@ -2,20 +2,17 @@ use std::cell::RefCell;
 use reedline::{DefaultPrompt, DefaultPromptSegment, Reedline, Signal};
 
 use crate::{
-    lexer::{Lexer, Token},
-    parser::Parser,
-    repl::{CIReplError, ReadSignal, Repl}
+    parser_types::Parser, repl::{CIReplError, ReadSignal, Repl}
 };
 
-pub struct CITermRepl<L, P> {
+pub struct CITermRepl<P> {
     line_editor: RefCell<Reedline>,
     prompt: DefaultPrompt,
 
-    lexer: L,
     parser: P
 }
 
-impl<L: Default, P: Default> Default for CITermRepl<L, P> {
+impl<P: Default> Default for CITermRepl<P> {
     fn default() -> Self {
         Self {
             line_editor: RefCell::new(Reedline::create()),
@@ -24,16 +21,14 @@ impl<L: Default, P: Default> Default for CITermRepl<L, P> {
                 DefaultPromptSegment::Empty
             ),
 
-            lexer: L::default(),
             parser: P::default()
         }
     }
 }
 
-impl<L, P> Repl for CITermRepl<L, P>
+impl<P> Repl for CITermRepl<P>
 where
-    L: Lexer<Input = String>,
-    P: Parser<InputNode = Token, OutputNode: std::fmt::Debug>
+    P: Parser<InputNode = char, OutputNode: std::fmt::Debug>
 {
     type Input = String;
     type Output = Vec<P::OutputNode>;
@@ -50,9 +45,7 @@ where
     }
 
     fn evaluate(&self, input: String) -> Result<Self::Output, CIReplError> {
-        let tokens = self.lexer.tokenize(input)?;
-
-        Ok(self.parser.parse(tokens)?)
+        Ok(self.parser.parse(input.chars().collect())?)
     }
 
     fn print(&self, output: Self::Output) -> Result<(), CIReplError> {

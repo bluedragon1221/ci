@@ -1,15 +1,4 @@
-use std::marker::PhantomData;
-
-use crate::lexer::{Token, Value};
-
-#[derive(Clone, Debug)]
-pub enum AstNode {
-    Value(Value),
-    Par {
-        car: Box<AstNode>,
-        cdr: Box<AstNode>
-    }
-}
+use crate::{ast::{IntermediateToken, Token}, parsers::{CIEvalError, CILexerError}};
 
 #[derive(Debug, thiserror::Error)]
 pub enum CIParserError {
@@ -22,20 +11,27 @@ pub enum CIParserError {
     #[error("UnknownToken: {0:?}")]
     UnknownToken(Box<Token>),
 
+    #[error("UnexpectedToken: {0:?}")]
+    UnexpectedToken(Box<IntermediateToken>),
+
     #[error("Too many parameters in Node: {0}")]
     NodeFull(usize),
 
-    #[error("[Internal] marker in ast?")]
-    FoundMarker,
-
     #[error("[Internal] parsing not done")]
-    ParsingUnfinished
+    ParsingUnfinished,
+
+    #[error("LexerError: {0}")]
+    LexerError(#[from] CILexerError),
+
+    #[error("EvalError: {0}")]
+    EvalError(#[from] CIEvalError)
 }
 
-pub trait ParserState {
+pub trait Parser {
+    type InputNode;
     type OutputNode;
 
-    fn take_tokens(self) -> Vec<Self::OutputNode>;
+    fn parse(&self, tokens: Vec<Self::InputNode>) -> Result<Vec<Self::OutputNode>, CIParserError>;
 }
 
 pub trait SingleParser {
@@ -57,6 +53,14 @@ pub trait SingleParser {
         Ok(state.take_tokens())
     }
 }
+impl<T: SingleParser> Parser for T {
+    type InputNode = T::InputNode;
+    type OutputNode = T::OutputNode;
+
+    fn parse(&self, tokens: Vec<Self::InputNode>) -> Result<Vec<Self::OutputNode>, CIParserError> {
+        T::single_parse(&self, tokens)
+    }
+}
 
 pub trait SingleParserDefault {
     type InputNode;
@@ -65,7 +69,6 @@ pub trait SingleParserDefault {
     
     fn handle_token(token: Self::InputNode, state: &mut Self::State) -> Result<(), CIParserError>;
 }
-
 impl<T> SingleParser for T 
 where 
     T: SingleParserDefault,
@@ -83,25 +86,18 @@ where
     }
 }
 
-pub trait Parser {
-    type InputNode;
+
+pub trait ParserState {
     type OutputNode;
 
-    fn parse(&self, tokens: Vec<Self::InputNode>) -> Result<Vec<Self::OutputNode>, CIParserError>;
-}
-
-impl<T: SingleParser> Parser for T {
-    type InputNode = T::InputNode;
-    type OutputNode = T::OutputNode;
-
-    fn parse(&self, tokens: Vec<Self::InputNode>) -> Result<Vec<Self::OutputNode>, CIParserError> {
-        T::single_parse(&self, tokens)
-    }
+    fn take_tokens(self) -> Vec<Self::OutputNode>;
 }
 
 #[derive(Default)]
-pub struct SeqParsers<A, B>(PhantomData<(A, B)>);
-
+pub struct SeqParsers<A, B> {
+    a: A,
+    b: B
+}
 impl<A, B> Parser for SeqParsers<A, B>
 where
     A: Parser + Default,
@@ -111,10 +107,8 @@ where
     type OutputNode = B::OutputNode;
 
     fn parse(&self, tokens: Vec<Self::InputNode>) -> Result<Vec<Self::OutputNode>, CIParserError> {
-        let tokens = A::default().parse(tokens)?;
-        B::default().parse(tokens)
+        let tokens = self.a.parse(tokens)?;
+        self.b.parse(tokens)
     }
 }
 
-mod ci_core_parser;
-pub use ci_core_parser::{CICoreParser, IntermediateTokenizer, ParserStep};
