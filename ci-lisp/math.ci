@@ -1,0 +1,10 @@
+((def
+  (\ 'self
+    (\ 'a
+      (\ 'b
+        ((((if ((eq b) 0))
+           (\ '_ a))
+           (\ '_ (((self 'self) (inc a)) (dec b))))
+         0)))))
+  'add)
+

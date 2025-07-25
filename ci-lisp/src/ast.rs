@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::parsers::CIEvalError;
 
@@ -48,6 +48,8 @@ pub enum IntermediateToken {
     LParen(i32),
     Value(Value),
     RParen(i32),
+    LCurly(i32),
+    RCurly(i32),
     EOF,
     Fn,
     AstNode(AstNode),
@@ -59,6 +61,7 @@ pub enum Function {
     User {
         varname: String,
         body: Box<AstNode>,
+        env: Rc<RefCell<HashMap<String, AstNode>>>
     },
 }
 
@@ -66,7 +69,7 @@ impl std::fmt::Debug for Function {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Function::Native(_) => write!(f, "<native fn>"),
-            Function::User { varname, body } => write!(f, "λ{} -> {:?}", varname, body),
+            Function::User { varname, body, env: _ } => write!(f, "λ{} -> {:?}", varname, body),
         }
     }
 }
@@ -77,6 +80,10 @@ pub enum AstNode {
     Par {
         car: Box<AstNode>,
         cdr: Box<AstNode>
+    },
+    Lambda {
+        varname: String,
+        body: Box<AstNode>,
     },
     Function(Function)
 }

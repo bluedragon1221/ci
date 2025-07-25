@@ -168,17 +168,25 @@ impl CIEvaluator {
                 match func {
                     AstNode::Function(Function::Native(f)) => f(arg).map_err(Into::into),
 
-                    AstNode::Function(Function::User { varname, body }) => {
-                        let mut new_env = (*self.env.borrow()).clone();
+                    AstNode::Function(Function::User { varname, body, env }) => {
+                        let mut new_env = (*env.borrow()).clone();
                         new_env.insert(varname.clone(), arg);
                         let new_env_rc = Rc::new(RefCell::new(new_env));
-                        let subeval = CIEvaluator { env: new_env_rc };
+                        let subeval = CIEvaluator::new(new_env_rc);
                         subeval.eval_node(&body)
                     }
 
                     other => Err(CIEvalError::NonCallable(Box::new(other))),
                 }
             }
+
+            AstNode::Lambda { varname, body } => {
+                Ok(AstNode::Function(Function::User {
+                    varname: varname.clone(),
+                    body: Box::new(*body.clone()),
+                    env: Rc::clone(&self.env),
+                }))
+            },
 
             AstNode::Value(Value::Symbol(s)) => {
                 self.env.borrow().get(s)

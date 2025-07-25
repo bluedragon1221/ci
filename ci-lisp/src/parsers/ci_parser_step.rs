@@ -1,4 +1,4 @@
-use crate::{ast::{AstNode, Function, IntermediateToken, Value}, parser_types::{CIParserError, ParserState, SingleParser}};
+use crate::{ast::{AstNode, IntermediateToken, Value}, parser_types::{CIParserError, ParserState, SingleParser}};
 
 type Type = AstNode;
 
@@ -11,7 +11,7 @@ pub struct ParserStepState {
     in_highest_level: bool,
 
     in_fn: bool,
-    cur_fn: Vec<Type>
+    cur_fn: Vec<Type>,
 }
 
 impl ParserStepState {
@@ -59,7 +59,7 @@ impl ParserStepState {
         if let AstNode::Value(Value::Ident(ident)) = &self.cur_fn[0] {
             // so now I know fn.len == 2 and fn[0] is an ident
 
-            self.new_tokens.push(IntermediateToken::AstNode(AstNode::Function(Function::User { varname: ident.clone(), body: Box::new(self.cur_fn[1].clone()) })))
+            self.new_tokens.push(IntermediateToken::AstNode(AstNode::Lambda { varname: ident.clone(), body: Box::new(self.cur_fn[1].clone()) }))
         } else {
             return Err(CIParserError::UnexpectedToken(Box::new(IntermediateToken::AstNode(self.cur_fn[0].clone()))))
         }
