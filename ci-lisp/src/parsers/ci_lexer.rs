@@ -118,16 +118,18 @@ impl CILexer {
 }
 
 impl Parser for CILexer {
-    type InputNode = char;
-    type OutputNode = Token;
+    type Input = String;
+    type Output = Vec<Token>;
 
-    fn parse(&self, tokens: Vec<Self::InputNode>) -> Result<Vec<Self::OutputNode>, CIParserError> {
+    fn parse(&self, tokens: String) -> Result<Vec<Token>, CIParserError> {
         let mut state = CILexerState::default();
 
-        for i in tokens.iter() {
-            Self::handle_char(*i, &mut state)?;
+        for i in tokens.chars() {
+            Self::handle_char(i, &mut state)?;
         }
+
         CILexer::handle_eof(&mut state)?;
+
 
         Ok(state.take_tokens())
     }

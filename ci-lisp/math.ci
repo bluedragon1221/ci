@@ -1,10 +1,79 @@
-((def
-  (\ 'self
-    (\ 'a
-      (\ 'b
-        ((((if ((eq b) 0))
-           (\ '_ a))
-           (\ '_ (((self 'self) (inc a)) (dec b))))
-         0)))))
+((def def) '=)
+
+("== Addition and Subtraction")
+
+((def (\ 'a (\ 'b
+  ((((if ((eq b) 0))
+     (\ '_ a))
+     (\ '_ ((add (inc a)) (dec b))))
+    nil))))
   'add)
 
+((def (\ 'b (\ 'a
+  ((((if ((eq b) 0))
+     (\ '_ a))
+     (\ '_ ((sub (dec b)) (dec a))))
+    nil))))
+  'sub)
+
+((def (\ 'a (\ 'b
+  ((((if ((eq b) 0))
+     (\ '_ 0))
+     (\ '_ ((add a) ((mul a) (dec b)))))
+   nil))))
+ 'mul)
+
+((def add) '+)
+((def sub) '-)
+((def mul) '*)
+
+("recursively call this function with an integer argument, then call it with nil to get the sum of those integers")
+((def
+  (\ 'sum
+    (\ 'next
+      ((((if ((eq next) nil))
+         (\ '_ sum))
+         (\ '_ ((vadd ((add sum) next)))))
+       nil))))
+'vadd)
+
+("== Cons pairs")
+
+{ 'cons = (\ 'b (\ 'a (\ 'u ((u a) b)))) }
+((def cons) ':)
+
+{ 'car = (\ 'p (p (\ 'x (\ 'y x)))) }
+{ 'cdr = (\ 'p (p (\ 'x (\ 'y y)))) }
+
+{ 'swap = (\ 'p {(cdr p) : (car p)}) }
+
+("== Lists")
+
+("Currently crashes, not sure why")
+((def
+ (\ 'list
+   (\ 'acc
+     (((((if ((eq list) nil))
+        (\ '_ acc))
+        (\ '_ ((reverse (cdr list)) ({(car list) : acc})))))
+      nil))))
+ 'reverse)
+
+((def (\ 'n (\ 'list
+  ((((if ((eq n) 0))
+     (\ '_ (car list)))
+     (\ '_ ((nth (dec n)) (cdr list))))
+   nil))))
+'nth)
+
+((def (\ 'f (\ 'acc (\ 'xs
+    (((((if ((eq xs) nil))
+       (\ '_ acc))
+       (\ '_ ((foldl f ((f acc) (car xs))) (cdr xs))))
+     0))))))
+'foldl)
+
+("== Function helpers")
+
+((def (\ 'f (\ 'g (\ 'x (g (f x)))))) 'compose)
+((def compose) '.)

@@ -24,26 +24,32 @@ pub enum CIParserError {
     LexerError(#[from] CILexerError),
 
     #[error("EvalError: {0}")]
-    EvalError(#[from] CIEvalError)
+    EvalError(#[from] CIEvalError),
 }
 
 pub trait Parser {
-    type InputNode;
-    type OutputNode;
+    type Input;
+    type Output;
 
-    fn parse(&self, tokens: Vec<Self::InputNode>) -> Result<Vec<Self::OutputNode>, CIParserError>;
+    fn parse(&self, tokens: Self::Input) -> Result<Self::Output, CIParserError>;
+}
+
+pub trait ParserState {
+    type Output;
+
+    fn take_tokens(self) -> Self::Output;
 }
 
 pub trait SingleParser {
-    type InputNode;
-    type OutputNode;
-    type State: ParserState<OutputNode = Self::OutputNode>;
+    type Input: IntoIterator;
+    type Output;
+    type State: ParserState<Output = Self::Output>;
 
-    fn handle_token(token: Self::InputNode, state: &mut Self::State) -> Result<(), CIParserError>;
+    fn handle_token(token: <Self::Input as IntoIterator>::Item, state: &mut Self::State) -> Result<(), CIParserError>;
 
-    fn init_state(tokens: &Vec<Self::InputNode>) -> Self::State;
+    fn init_state(tokens: &Self::Input) -> Self::State;
 
-    fn single_parse(&self, tokens: Vec<Self::InputNode>) -> Result<Vec<Self::OutputNode>, CIParserError> {
+    fn single_parse(&self, tokens: Self::Input) -> Result<Self::Output, CIParserError> {
         let mut state = Self::init_state(&tokens);
 
         for token in tokens.into_iter() {
@@ -54,65 +60,68 @@ pub trait SingleParser {
     }
 }
 impl<T: SingleParser> Parser for T {
-    type InputNode = T::InputNode;
-    type OutputNode = T::OutputNode;
+    type Input = T::Input;
+    type Output = T::Output;
 
-    fn parse(&self, tokens: Vec<Self::InputNode>) -> Result<Vec<Self::OutputNode>, CIParserError> {
+    fn parse(&self, tokens: Self::Input) -> Result<Self::Output, CIParserError> {
         T::single_parse(&self, tokens)
     }
 }
 
 pub trait SingleParserDefault {
-    type InputNode;
-    type OutputNode;
-    type State: ParserState<OutputNode = Self::OutputNode> + Default;
+    type Input: IntoIterator;
+    type Output;
+    type State: ParserState<Output = Self::Output> + Default;
     
-    fn handle_token(token: Self::InputNode, state: &mut Self::State) -> Result<(), CIParserError>;
+    fn handle_token(token: <Self::Input as IntoIterator>::Item, state: &mut Self::State) -> Result<(), CIParserError>;
 }
 impl<T> SingleParser for T 
 where 
     T: SingleParserDefault,
 {
-    type InputNode = T::InputNode;
-    type OutputNode = T::OutputNode;
+    type Input = T::Input;
+    type Output = T::Output;
     type State = T::State;
     
-    fn handle_token(token: Self::InputNode, state: &mut Self::State) -> Result<(), CIParserError> {
+    fn handle_token(token: <T::Input as IntoIterator>::Item, state: &mut Self::State) -> Result<(), CIParserError> {
         T::handle_token(token, state)
     }
     
-    fn init_state(_tokens: &Vec<Self::InputNode>) -> Self::State {
+    fn init_state(_tokens: &Self::Input) -> Self::State {
         Self::State::default()
     }
 }
 
 
-pub trait ParserState {
-    type OutputNode;
-
-    fn take_tokens(self) -> Vec<Self::OutputNode>;
-}
-
 #[derive(Default)]
-pub struct SeqParsers<A, B> {
+pub struct SeqParsers<A, B>
+where
+    A: Parser,
+    B: Parser<Input = A::Output>
+{
     a: A,
     b: B
 }
+
 impl<A, B> Parser for SeqParsers<A, B>
 where
     A: Parser,
-    B: Parser<InputNode = A::OutputNode>
+    B: Parser<Input = A::Output>
 {
-    type InputNode = A::InputNode;
-    type OutputNode = B::OutputNode;
+    type Input = A::Input;
+    type Output = B::Output;
 
-    fn parse(&self, tokens: Vec<Self::InputNode>) -> Result<Vec<Self::OutputNode>, CIParserError> {
+    fn parse(&self, tokens: Self::Input) -> Result<Self::Output, CIParserError> {
         let tokens = self.a.parse(tokens)?;
         self.b.parse(tokens)
     }
 }
 
-impl<A, B> SeqParsers<A, B> {
+impl<A, B> SeqParsers<A, B>
+where
+    A: Parser,
+    B: Parser<Input = A::Output>
+{
     pub fn new(a: A, b: B) -> SeqParsers<A, B> {
         SeqParsers { a, b }
     }

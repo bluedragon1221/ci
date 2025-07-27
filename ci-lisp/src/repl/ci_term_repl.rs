@@ -5,14 +5,36 @@ use crate::{
     parser_types::Parser, repl::{CIReplError, ReadSignal, Repl}
 };
 
-pub struct CITermRepl<P> {
+pub struct CITermRepl<P>
+where
+    P: Parser<Input = String, Output: IntoIterator<Item: std::fmt::Display>>
+{
     line_editor: RefCell<Reedline>,
     prompt: DefaultPrompt,
 
     parser: P
 }
 
-impl<P: Default> Default for CITermRepl<P> {
+impl<P> CITermRepl<P>
+where
+    P: Parser<Input = String, Output: IntoIterator<Item: std::fmt::Display>>
+{
+    pub fn new(parser: P) -> Self {
+        Self {
+            parser,
+            line_editor: RefCell::new(Reedline::create()),
+            prompt: DefaultPrompt::new(
+                DefaultPromptSegment::Empty,
+                DefaultPromptSegment::Empty
+            ),
+        }
+    }
+}
+
+impl<P> Default for CITermRepl<P>
+where
+    P: Parser<Input = String, Output: IntoIterator<Item: std::fmt::Display>> + Default
+{
     fn default() -> Self {
         Self {
             line_editor: RefCell::new(Reedline::create()),
@@ -28,10 +50,10 @@ impl<P: Default> Default for CITermRepl<P> {
 
 impl<P> Repl for CITermRepl<P>
 where
-    P: Parser<InputNode = char, OutputNode: std::fmt::Debug>
+    P: Parser<Input = String, Output: IntoIterator<Item: std::fmt::Display>>
 {
     type Input = String;
-    type Output = Vec<P::OutputNode>;
+    type Output = P::Output;
 
     fn read(&self) -> Result<ReadSignal<Self::Input>, CIReplError> {
         let mut line_editor = self.line_editor.borrow_mut();
@@ -45,10 +67,14 @@ where
     }
 
     fn evaluate(&self, input: String) -> Result<Self::Output, CIReplError> {
-        Ok(self.parser.parse(input.chars().collect())?)
+        Ok(self.parser.parse(input)?)
     }
 
     fn print(&self, output: Self::Output) -> Result<(), CIReplError> {
-        Ok(println!("{:#?}", output))
+        for i in output.into_iter() {
+            println!("{}", i);
+        }
+
+        Ok(())
     }
 }

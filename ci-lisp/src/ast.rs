@@ -12,6 +12,19 @@ pub enum Value {
     Nil
 }
 
+impl std::fmt::Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Value::Int(i) => write!(f, "{}", i),
+            Value::String(i) => write!(f, "\"{}\"", i),
+            Value::Symbol(i) => write!(f, "{}", i),
+            Value::Ident(i) => write!(f, "'{}", i),
+            Value::True => write!(f, "t"),
+            Value::Nil => write!(f, "nil")
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum Token {
     LParen,
@@ -37,6 +50,8 @@ impl Token {
             Token::Value(Value::Ident(without_quote.to_string()))
         } else if word == "t" {
             Token::Value(Value::True)
+        } else if word == "nil" {
+            Token::Value(Value::Nil)
         } else {
             Token::Value(Value::Symbol(word.to_string()))
         }
@@ -50,6 +65,8 @@ pub enum IntermediateToken {
     RParen(i32),
     LCurly(i32),
     RCurly(i32),
+    LBracket(i32),
+    RBracket(i32),
     EOF,
     Fn,
     AstNode(AstNode),
@@ -69,7 +86,16 @@ impl std::fmt::Debug for Function {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Function::Native(_) => write!(f, "<native fn>"),
-            Function::User { varname, body, env: _ } => write!(f, "λ{} -> {:?}", varname, body),
+            Function::User { varname: _, body: _, env: _ } => write!(f, "{:?}", self),
+        }
+    }
+}
+
+impl std::fmt::Display for Function {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Function::Native(_) => write!(f, "<native fn>"),
+            Function::User { varname, body, env: _ } => write!(f, "λ{} -> {}", varname, body),
         }
     }
 }
@@ -95,3 +121,13 @@ impl Default for AstNode {
     }
 }
 
+impl std::fmt::Display for AstNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AstNode::Value(value) => write!(f, "{}", value),
+            AstNode::Par { car, cdr } => write!(f, "({} {})", car, cdr),
+            AstNode::Lambda { varname, body } => write!(f, "λ{} -> {}", varname, body),
+            AstNode::Function(function) => write!(f, "{}", function),
+        }
+    }
+}

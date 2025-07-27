@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 
-use crate::{ast::{IntermediateToken, Token}, parser_types::{CIParserError, ParserState, SingleParserDefault}};
+use crate::{ast::{IntermediateToken, Token}, parser_types::{CIParserError, Parser, ParserState}};
 
 #[derive(Default)]
 pub struct CIIntermediateTokenizerState {
@@ -15,9 +15,9 @@ impl CIIntermediateTokenizerState {
 }
 
 impl ParserState for CIIntermediateTokenizerState {
-    type OutputNode = IntermediateToken;
+    type Output = Vec<IntermediateToken>;
 
-    fn take_tokens(self) -> Vec<Self::OutputNode> {
+    fn take_tokens(self) -> Self::Output {
         self.new_tokens
     }
 }
@@ -25,22 +25,34 @@ impl ParserState for CIIntermediateTokenizerState {
 #[derive(Default)]
 pub struct CIIntermediateTokenizer {}
 
-impl SingleParserDefault for CIIntermediateTokenizer {
-    type InputNode = Token;
-    type OutputNode = IntermediateToken;
-    type State = CIIntermediateTokenizerState;
-
-    fn handle_token(token: Self::InputNode, state: &mut CIIntermediateTokenizerState) -> Result<(), CIParserError> {
+impl CIIntermediateTokenizer {
+    fn handle_token(token: Token, state: &mut CIIntermediateTokenizerState) -> Result<(), CIParserError> {
         match token {
             Token::LParen => {
                 state.cur_paren_level += 1;
                 state.push_token(IntermediateToken::LParen(state.cur_paren_level));
             },
+            Token::LCurly => {
+                state.cur_paren_level += 1;
+                state.push_token(IntermediateToken::LCurly(state.cur_paren_level));
+            },
+            Token::LBracket => {
+                state.cur_paren_level += 1;
+                state.push_token(IntermediateToken::LBracket(state.cur_paren_level));
+            }
             Token::Value(a) => state.push_token(IntermediateToken::Value(a)),
             Token::RParen => {
                 state.push_token(IntermediateToken::RParen(state.cur_paren_level));
                 state.cur_paren_level -= 1;
             },
+            Token::RCurly => {
+                state.push_token(IntermediateToken::RCurly(state.cur_paren_level));
+                state.cur_paren_level -= 1;
+            },
+            Token::RBracket => {
+                state.push_token(IntermediateToken::RBracket(state.cur_paren_level));
+                state.cur_paren_level -= 1;
+            }
             Token::Fn => state.push_token(IntermediateToken::Fn),
             Token::EOF => {
                 state.push_token(IntermediateToken::EOF);
@@ -52,9 +64,24 @@ impl SingleParserDefault for CIIntermediateTokenizer {
                     Ordering::Equal => ()
                 }
             },
-            a => return Err(CIParserError::UnknownToken(Box::new(a)))
+            // a => return Err(CIParserError::UnknownToken(Box::new(a)))
         };
 
         Ok(())
     }
+}
+
+impl Parser for CIIntermediateTokenizer {
+    type Input = Vec<Token>;
+    type Output = Vec<IntermediateToken>;
+
+    fn parse(&self, tokens: Self::Input) -> Result<Self::Output, CIParserError> {
+        let mut state = CIIntermediateTokenizerState::default();
+
+        for i in tokens.into_iter() {
+            Self::handle_token(i, &mut state)?;
+        }
+
+        Ok(state.take_tokens())        
+    } 
 }

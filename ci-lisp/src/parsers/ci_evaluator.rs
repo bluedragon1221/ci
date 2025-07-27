@@ -24,11 +24,11 @@ pub enum CIEvalError {
     FileParseError(#[from] Box<CIParserError>)
 }
 
-pub struct CIEvaluator {
+pub struct CIFileEvaluator {
     env: Rc<RefCell<HashMap<String, AstNode>>>,
 }
 
-impl Default for CIEvaluator {
+impl Default for CIFileEvaluator {
     fn default() -> Self {
         let env = Rc::new(RefCell::new(HashMap::new()));
 
@@ -37,6 +37,11 @@ impl Default for CIEvaluator {
         initial_bindings.insert("inc".to_string(), native_fn!(
             (AstNode::Value(Value::Int(a))), {
                 Ok(AstNode::Value(Value::Int(a + 1)))
+            }
+        ));
+        initial_bindings.insert("dec".to_string(), native_fn!(
+            (AstNode::Value(Value::Int(a))), {
+                Ok(AstNode::Value(Value::Int(a - 1)))
             }
         ));
 
@@ -127,7 +132,7 @@ impl Default for CIEvaluator {
                     };
 
                     // Evaluate each node in the current env
-                    let local_evaluator = CIEvaluator { env: Rc::clone(&env) };
+                    let local_evaluator = CIFileEvaluator { env: Rc::clone(&env) };
                     for node in parsed_nodes {
                         local_evaluator.eval_node(&node)?;
                     }
@@ -144,10 +149,10 @@ impl Default for CIEvaluator {
 }
 
 
-impl CIEvaluator {
+impl CIFileEvaluator {
     pub fn new(custom_env: Rc<RefCell<HashMap<String, AstNode>>>) -> Self {
         // Start with the default environment bindings
-        let default_evaluator = CIEvaluator::default();
+        let default_evaluator = CIFileEvaluator::default();
         let mut merged_env = default_evaluator.env.borrow().clone();
 
         // Extend/override with custom_env
@@ -172,7 +177,7 @@ impl CIEvaluator {
                         let mut new_env = (*env.borrow()).clone();
                         new_env.insert(varname.clone(), arg);
                         let new_env_rc = Rc::new(RefCell::new(new_env));
-                        let subeval = CIEvaluator::new(new_env_rc);
+                        let subeval = CIFileEvaluator::new(new_env_rc);
                         subeval.eval_node(&body)
                     }
 
@@ -199,9 +204,9 @@ impl CIEvaluator {
     }
 }
 
-impl Parser for CIEvaluator {
-    type InputNode = AstNode;
-    type OutputNode = AstNode;
+impl Parser for CIFileEvaluator {
+    type Input = Vec<AstNode>;
+    type Output = Vec<AstNode>;
     
     fn parse(&self, ast: Vec<AstNode>) -> Result<Vec<AstNode>, CIParserError> {
         ast.iter().map(|n| Ok(self.eval_node(n)?)).collect()

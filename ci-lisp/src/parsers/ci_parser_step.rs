@@ -1,7 +1,5 @@
 use crate::{ast::{AstNode, IntermediateToken, Value}, parser_types::{CIParserError, ParserState, SingleParser}};
 
-type Type = AstNode;
-
 #[derive(Default)]
 pub struct ParserStepState {
     new_tokens: Vec<IntermediateToken>,
@@ -11,7 +9,13 @@ pub struct ParserStepState {
     in_highest_level: bool,
 
     in_fn: bool,
-    cur_fn: Vec<Type>,
+    cur_fn: Vec<AstNode>,
+
+    in_infix: bool,
+    cur_infix: Vec<AstNode>,
+
+    in_list: bool,
+    cur_list: Vec<AstNode>
 }
 
 impl ParserStepState {
@@ -57,14 +61,57 @@ impl ParserStepState {
         }
 
         if let AstNode::Value(Value::Ident(ident)) = &self.cur_fn[0] {
-            // so now I know fn.len == 2 and fn[0] is an ident
-
-            self.new_tokens.push(IntermediateToken::AstNode(AstNode::Lambda { varname: ident.clone(), body: Box::new(self.cur_fn[1].clone()) }))
+            self.new_tokens.push(IntermediateToken::AstNode(AstNode::Lambda { varname: ident.clone(), body: Box::new(std::mem::take(&mut self.cur_fn[1])) }))
         } else {
-            return Err(CIParserError::UnexpectedToken(Box::new(IntermediateToken::AstNode(self.cur_fn[0].clone()))))
+            return Err(CIParserError::UnexpectedToken(Box::new(IntermediateToken::AstNode(std::mem::take(&mut self.cur_fn[0])))))
         }
 
         self.cur_fn.clear();
+
+        Ok(())
+    }
+
+    fn flush_cur_infix(&mut self) -> Result<(), CIParserError> {
+        // {1 + 2} => ((+ 2) 1)
+
+        if self.cur_infix.len() == 0 {
+            self.new_tokens.push(IntermediateToken::AstNode(AstNode::Value(Value::Nil)));
+        } else if self.cur_infix.len() == 1 {
+            self.new_tokens.push(IntermediateToken::AstNode(std::mem::take(&mut self.cur_infix[0])));
+        } else {
+            if self.cur_infix.len() != 3 {
+                return Err(CIParserError::NodeFull(self.cur_infix.clone()));
+            }
+
+            self.new_tokens.push(IntermediateToken::AstNode(AstNode::Par {
+                car: Box::new(AstNode::Par {
+                    car: Box::new(std::mem::take(&mut self.cur_infix[1])),
+                    cdr: Box::new(std::mem::take(&mut self.cur_infix[2]))
+                }),
+                cdr: Box::new(std::mem::take(&mut self.cur_infix[0]))
+            }));
+        }
+
+        self.cur_infix.clear();
+
+        Ok(())
+    }
+
+    fn flush_cur_list(&mut self) -> Result<(), CIParserError> {
+        let mut result = AstNode::Value(Value::Nil);
+
+        for elem in self.cur_list.iter().rev() {
+            result = AstNode::Par {
+                car: Box::new(AstNode::Par {
+                    car: Box::new(AstNode::Value(Value::Symbol("cons".into()))),
+                    cdr: Box::new(result),
+                }),
+                cdr: Box::new(elem.clone()),
+            };
+        }
+
+        self.new_tokens.push(IntermediateToken::AstNode(result));
+        self.cur_list.clear();
 
         Ok(())
     }
@@ -74,6 +121,10 @@ impl ParserStepState {
             .filter_map(|x| match x {
                 IntermediateToken::LParen(n) => Some(*n),
                 IntermediateToken::RParen(n) => Some(*n),
+                IntermediateToken::LCurly(n) => Some(*n),
+                IntermediateToken::RCurly(n) => Some(*n),
+                IntermediateToken::LBracket(n) => Some(*n),
+                IntermediateToken::RBracket(n) => Some(*n),
                 _ => None
             })
             .max()
@@ -82,9 +133,9 @@ impl ParserStepState {
 }
 
 impl ParserState for ParserStepState {
-    type OutputNode = IntermediateToken;
-    
-    fn take_tokens(self) -> Vec<Self::OutputNode> {
+    type Output = Vec<IntermediateToken>;
+
+    fn take_tokens(self) -> Self::Output {
         self.new_tokens
     }
 }
@@ -93,11 +144,11 @@ impl ParserState for ParserStepState {
 pub struct ParserStep {}
 
 impl SingleParser for ParserStep {
-    type InputNode = IntermediateToken;
-    type OutputNode = IntermediateToken;
+    type Input = Vec<IntermediateToken>;
+    type Output = Vec<IntermediateToken>;
     type State = ParserStepState;
 
-    fn init_state(tokens: &Vec<Self::InputNode>) -> Self::State {
+    fn init_state(tokens: &Self::Input) -> Self::State {
         ParserStepState::new(&tokens)
     }
 
@@ -106,10 +157,18 @@ impl SingleParser for ParserStep {
             IntermediateToken::LParen(level) if level == state.highest_level => {
                 state.in_highest_level = true;
             }
+            IntermediateToken::LCurly(level) if level == state.highest_level => {
+                state.in_highest_level = true;
+                state.in_infix = true;
+            }
+            IntermediateToken::LBracket(level) if level == state.highest_level => {
+                state.in_highest_level = true;
+                state.in_list = true;
+            }
             IntermediateToken::Fn => {
                 // fn must be the first token in parens ()
                 if state.in_highest_level {
-                    if state.cur_node.len() != 0 {
+                    if state.cur_node.len() != 0 || state.in_infix || state.in_list {
                         return Err(CIParserError::UnexpectedToken(Box::new(IntermediateToken::Fn)));
                     }
 
@@ -122,6 +181,10 @@ impl SingleParser for ParserStep {
                 if state.in_highest_level {
                     if state.in_fn {
                         state.cur_fn.push(AstNode::Value(value));
+                    } else if state.in_infix {
+                        state.cur_infix.push(AstNode::Value(value));
+                    } else if state.in_list {
+                        state.cur_list.push(AstNode::Value(value));
                     } else {
                         state.push_cur_node(AstNode::Value(value));
                     }
@@ -131,9 +194,13 @@ impl SingleParser for ParserStep {
             },
             IntermediateToken::AstNode(ast_node) if state.in_highest_level => {
                 if state.in_fn {
-                    state.cur_fn.push(ast_node)
+                    state.cur_fn.push(ast_node);
+                } else if state.in_infix {
+                    state.cur_infix.push(ast_node);
+                } else if state.in_list {
+                    state.cur_list.push(ast_node);
                 } else {
-                    state.push_cur_node(ast_node)
+                    state.push_cur_node(ast_node);
                 }
             }
             IntermediateToken::RParen(level) if level == state.highest_level => {
@@ -145,6 +212,20 @@ impl SingleParser for ParserStep {
                 }
                 state.in_highest_level = false;
             },
+            IntermediateToken::RCurly(level) if level == state.highest_level => {
+                if state.in_infix {
+                    state.flush_cur_infix()?;
+                    state.in_infix = false;
+                }
+                state.in_highest_level = false;
+            }
+            IntermediateToken::RBracket(level) if level == state.highest_level => {
+                if state.in_list {
+                    state.flush_cur_list()?;
+                    state.in_list = false;
+                }
+                state.in_highest_level = false;
+            }
             IntermediateToken::EOF => (),
             a => state.push_token(a)
         }
