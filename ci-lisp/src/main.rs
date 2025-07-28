@@ -1,4 +1,4 @@
-use ci_lisp::{parser_types::SeqParsers, parsers::{CIFinalParserRepl, CIIntermediateTokenizer, CILexer, CIReplEvaluator}, repl::{CITermRepl, Repl}};
+use ci_lisp::{parser_types::SeqParsers, parsers::{CIIntermediateTokenizer, CILexer, CINewReplParser, CIReplEvaluator}, repl::{CITermRepl, Repl}};
 use clap::Parser;
 
 #[derive(clap::Parser, Debug)]
@@ -6,7 +6,10 @@ use clap::Parser;
 struct Args {
     // Name of library to preload
     #[arg(short = 'i')]
-    preload: Vec<String>
+    preload: Vec<String>,
+
+    #[arg(short = 'm')]
+    infix_repl: bool
 }
 
 fn main() {
@@ -18,7 +21,7 @@ fn main() {
             CIIntermediateTokenizer::default()
         ),
         SeqParsers::new(
-            CIFinalParserRepl::default(),
+            CINewReplParser::new(args.infix_repl),
             CIReplEvaluator::new(args.preload)
         )
     );

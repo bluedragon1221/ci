@@ -17,10 +17,10 @@ impl CIReplEvaluator {
 }
 
 impl Parser for CIReplEvaluator {
-    type Input = Vec<AstNode>;
+    type Input = AstNode;
     type Output = Vec<AstNode>;
 
-    fn parse(&self, ast: Vec<AstNode>) -> Result<Vec<AstNode>, CIParserError> {
+    fn parse(&self, ast: AstNode) -> Result<Vec<AstNode>, CIParserError> {
         for i in self.preload.iter() {
             self.file_evaluator.parse(vec![AstNode::Par {
                 car: Box::new(AstNode::Value(Value::Symbol("include".to_string()))),
@@ -28,6 +28,6 @@ impl Parser for CIReplEvaluator {
             }])?;
         }
 
-        Ok(self.file_evaluator.parse(ast)?)
+        Ok(self.file_evaluator.parse(vec![ast])?)
     }
 }

@@ -53,7 +53,6 @@ impl CIIntermediateTokenizer {
                 state.push_token(IntermediateToken::RBracket(state.cur_paren_level));
                 state.cur_paren_level -= 1;
             }
-            Token::Fn => state.push_token(IntermediateToken::Fn),
             Token::EOF => {
                 state.push_token(IntermediateToken::EOF);
 
@@ -64,7 +63,6 @@ impl CIIntermediateTokenizer {
                     Ordering::Equal => ()
                 }
             },
-            // a => return Err(CIParserError::UnknownToken(Box::new(a)))
         };
 
         Ok(())

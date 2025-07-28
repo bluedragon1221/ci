@@ -2,24 +2,24 @@
 
 ("== Addition and Subtraction")
 
-((def (\ 'a (\ 'b
+((def (fn 'a (fn 'b
   ((((if ((eq b) 0))
-     (\ '_ a))
-     (\ '_ ((add (inc a)) (dec b))))
+     (fn '_ a))
+     (fn '_ ((add (inc a)) (dec b))))
     nil))))
   'add)
 
-((def (\ 'b (\ 'a
+((def (fn 'b (fn 'a
   ((((if ((eq b) 0))
-     (\ '_ a))
-     (\ '_ ((sub (dec b)) (dec a))))
+     (fn '_ a))
+     (fn '_ ((sub (dec b)) (dec a))))
     nil))))
   'sub)
 
-((def (\ 'a (\ 'b
+((def (fn 'a (fn 'b
   ((((if ((eq b) 0))
-     (\ '_ 0))
-     (\ '_ ((add a) ((mul a) (dec b)))))
+     (fn '_ 0))
+     (fn '_ ((add a) ((mul a) (dec b)))))
    nil))))
  'mul)
 
@@ -27,53 +27,48 @@
 ((def sub) '-)
 ((def mul) '*)
 
+{ 'sqr = (fn 'a ((mul a) a)) }
+
 ("recursively call this function with an integer argument, then call it with nil to get the sum of those integers")
 ((def
-  (\ 'sum
-    (\ 'next
+  (fn 'sum
+    (fn 'next
       ((((if ((eq next) nil))
-         (\ '_ sum))
-         (\ '_ ((vadd ((add sum) next)))))
+         (fn '_ sum))
+         (fn '_ ((vadd ((add sum) next)))))
        nil))))
 'vadd)
 
 ("== Cons pairs")
 
-{ 'cons = (\ 'b (\ 'a (\ 'u ((u a) b)))) }
+{ 'cons = (fn 'b (fn 'a (fn 'u ((u a) b)))) }
 ((def cons) ':)
 
-{ 'car = (\ 'p (p (\ 'x (\ 'y x)))) }
-{ 'cdr = (\ 'p (p (\ 'x (\ 'y y)))) }
+{ 'car = (fn 'p (p (fn 'x (fn 'y x)))) }
+{ 'cdr = (fn 'p (p (fn 'x (fn 'y y)))) }
 
-{ 'swap = (\ 'p {(cdr p) : (car p)}) }
+{ 'swap = (fn 'p {(cdr p) : (car p)}) }
 
 ("== Lists")
 
 ("Currently crashes, not sure why")
 ((def
- (\ 'list
-   (\ 'acc
+ (fn 'list
+   (fn 'acc
      (((((if ((eq list) nil))
-        (\ '_ acc))
-        (\ '_ ((reverse (cdr list)) ({(car list) : acc})))))
+        (fn '_ acc))
+        (fn '_ ((reverse (cdr list)) ({(car list) : acc})))))
       nil))))
  'reverse)
 
-((def (\ 'n (\ 'list
+((def (fn 'n (fn 'list
   ((((if ((eq n) 0))
-     (\ '_ (car list)))
-     (\ '_ ((nth (dec n)) (cdr list))))
+     (fn '_ (car list)))
+     (fn '_ ((nth (dec n)) (cdr list))))
    nil))))
 'nth)
 
-((def (\ 'f (\ 'acc (\ 'xs
-    (((((if ((eq xs) nil))
-       (\ '_ acc))
-       (\ '_ ((foldl f ((f acc) (car xs))) (cdr xs))))
-     0))))))
-'foldl)
-
 ("== Function helpers")
 
-((def (\ 'f (\ 'g (\ 'x (g (f x)))))) 'compose)
+((def (fn 'f (fn 'g (fn 'x (g (f x)))))) 'compose)
 ((def compose) '.)

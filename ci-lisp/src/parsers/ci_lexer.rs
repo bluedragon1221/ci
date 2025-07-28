@@ -92,14 +92,6 @@ impl CILexer {
                 state.flush_word();
                 state.push_token(Token::RBracket);
             }
-            '\\' if !state.in_string => {
-                state.flush_word();
-                state.push_token(Token::Fn);
-            }
-            'λ' if !state.in_string => {
-                state.flush_word();
-                state.push_token(Token::Fn);
-            }
             a => state.push_char(a)
         }
         

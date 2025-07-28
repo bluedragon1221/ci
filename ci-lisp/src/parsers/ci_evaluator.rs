@@ -1,6 +1,6 @@
 use std::{cell::RefCell, collections::HashMap, fs, rc::Rc};
 
-use crate::{ast::{AstNode, Function, Value}, parser_types::{CIParserError, Parser}, parsers::CIOnlyParsing};
+use crate::{ast::{AstNode, Function, Value}, parser_types::{CIParserError, Parser}, parsers::CIFullFileParser};
 use crate::native_fn;
 
 #[derive(Debug, thiserror::Error)]
@@ -125,7 +125,7 @@ impl Default for CIFileEvaluator {
                         .map_err(|_| CIEvalError::NoSuchFile(filename.clone()))?;
 
                     // Parse the source into AST nodes
-                    let parser = CIOnlyParsing::default();
+                    let parser = CIFullFileParser::default();
                     let parsed_nodes = match parser.parse(source.chars().collect()) {
                         Ok(a) => a,
                         Err(e) => return Err(CIEvalError::FileParseError(Box::new(e)))

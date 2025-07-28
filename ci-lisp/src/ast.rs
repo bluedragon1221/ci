@@ -25,13 +25,12 @@ impl std::fmt::Display for Value {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Token {
     LParen,
     Value(Value),
     RParen,
     EOF,
-    Fn,
     LCurly,
     RCurly,
     LBracket,
@@ -68,7 +67,6 @@ pub enum IntermediateToken {
     LBracket(i32),
     RBracket(i32),
     EOF,
-    Fn,
     AstNode(AstNode),
 }
 

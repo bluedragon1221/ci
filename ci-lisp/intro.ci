@@ -1,0 +1,40 @@
+("== Math")
+((add 2) 3)
+((add 6) ((sub 2) 12))
+((mul 8) 6)
+
+("== Infix")
+{2 + 3}
+{{12 - 2} + 6}
+{6 * 8}
+
+("== Functions")
+(\ 'x {x * x})
+
+((def (\ 'x {x * x})) 'sqr)
+(sqr 8)
+(sqr 15)
+
+((def def) '=)
+{'sqr = (\ 'x {x * x})}
+
+("Some other fun math stuff")
+((((vadd 3) 2) 7) nil)
+
+("== Pairs")
+((cons 3) 2)
+
+((def cons) ':)
+((def {3 : 2}) p)
+(car p)
+(cdr p)
+
+("== Lists")
+{1 : { 2 : {3 : {4 : {5 : nil}}}}}
+
+[1 2 3 4 5]
+((def [1 2 3 4 5]) 'list)
+
+((nth 0) list)
+((nth 1) list)
+((nth 3) list)
