@@ -1,40 +1,29 @@
 use std::cell::RefCell;
 use reedline::{DefaultPrompt, DefaultPromptSegment, Reedline, Signal};
 
-use crate::{
-    parser_types::Parser, repl::{CIReplError, ReadSignal, Repl}
-};
+use crate::{parser_types::Parser, repl::{CIReplError, ReadSignal, Repl}};
 
-pub struct CITermRepl<P>
-where
-    P: Parser<Input = String, Output: IntoIterator<Item: std::fmt::Display>>
-{
+pub struct CITermRepl<P> {
     line_editor: RefCell<Reedline>,
     prompt: DefaultPrompt,
 
-    parser: P
+    parser: P,
 }
 
-impl<P> CITermRepl<P>
-where
-    P: Parser<Input = String, Output: IntoIterator<Item: std::fmt::Display>>
-{
+impl<P> CITermRepl<P> {
     pub fn new(parser: P) -> Self {
         Self {
-            parser,
             line_editor: RefCell::new(Reedline::create()),
             prompt: DefaultPrompt::new(
                 DefaultPromptSegment::Empty,
                 DefaultPromptSegment::Empty
             ),
+            parser,
         }
     }
 }
 
-impl<P> Default for CITermRepl<P>
-where
-    P: Parser<Input = String, Output: IntoIterator<Item: std::fmt::Display>> + Default
-{
+impl<P: Default> Default for CITermRepl<P> {
     fn default() -> Self {
         Self {
             line_editor: RefCell::new(Reedline::create()),
@@ -42,18 +31,18 @@ where
                 DefaultPromptSegment::Empty,
                 DefaultPromptSegment::Empty
             ),
-
             parser: P::default()
         }
     }
 }
 
-impl<P> Repl for CITermRepl<P>
+impl<P, O> Repl for CITermRepl<P>
 where
-    P: Parser<Input = String, Output: IntoIterator<Item: std::fmt::Display>>
+    O: IntoIterator<Item: std::fmt::Display>,
+    P: Parser<Input = String, Output = O>
 {
     type Input = String;
-    type Output = P::Output;
+    type Output = O;
 
     fn read(&self) -> Result<ReadSignal<Self::Input>, CIReplError> {
         let mut line_editor = self.line_editor.borrow_mut();

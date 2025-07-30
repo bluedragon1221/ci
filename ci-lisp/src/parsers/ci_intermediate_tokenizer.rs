@@ -41,6 +41,7 @@ impl CIIntermediateTokenizer {
                 state.push_token(IntermediateToken::LBracket(state.cur_paren_level));
             }
             Token::Value(a) => state.push_token(IntermediateToken::Value(a)),
+            Token::Hash => state.push_token(IntermediateToken::Hash),
             Token::RParen => {
                 state.push_token(IntermediateToken::RParen(state.cur_paren_level));
                 state.cur_paren_level -= 1;

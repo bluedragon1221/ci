@@ -1,17 +1,15 @@
-use crate::{ast::{AstNode, Value}, parser_types::{CIParserError, Parser}, parsers::CIFileEvaluator};
+use crate::{ast::{AstNode, Value}, env::Environment, parser_types::{CIParserError, Parser}, parsers::CIFileEvaluator};
 
-#[derive(Default)]
 pub struct CIReplEvaluator {
-    file_evaluator: CIFileEvaluator,
-
-    preload: Vec<String>
+    preload: Vec<String>,
+    file_evaluator: CIFileEvaluator
 }
 
 impl CIReplEvaluator {
-    pub fn new(preload: Vec<String>) -> Self {
+    pub fn new(preload: Vec<String>, initial_env: Environment) -> Self {
         Self {
             preload,
-            ..Default::default()
+            file_evaluator: CIFileEvaluator::new(initial_env)
         }
     }
 }

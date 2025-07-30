@@ -1,0 +1,101 @@
+((def def) '=)
+
+((def (fn 'f (fn 'g (fn 'comp_x (g (f comp_x)))))) 'compose)
+((def compose) '.)
+
+((def (fn 'f (fn 'g {f . g}))) 'pipe)
+((def pipe) '|>)
+
+("The language does not have named recursion, so we use the Z-combinator to define recursive relationships")
+((def (fn 'f
+    ((fn 'x (f (fn 'v ((x x) v))))
+     (fn 'x (f (fn 'v ((x x) v)))))
+  ))
+'Z)
+
+{'not = (fn 'x (((if x) nil) t))}
+
+("Strings stuff")
+((def str_concat) '..)
+
+("Sugars for builtins")
+((def lt) '<)
+((def add) '+)
+((def sub) '-)
+((def mul) '*)
+
+{'sqr = (fn 'a {a * a})}
+
+("== Cons pairs")
+{'cons = (fn 'b (fn 'a (fn 'u ((u a) b))))}
+((def cons) ':)
+
+{'car = (fn 'p (p (fn 'car_x (fn 'y car_x))))}
+{'cdr = (fn 'p (p (fn 'cdr_x (fn 'cdr_y cdr_y))))}
+
+{'swap = (fn 'p {(cdr p) : (car p)})}
+
+{'fmt_pair = (fn 'p {"{" .. {(car p) .. { " : " .. {(cdr p) .. "}"}}}})}
+
+("== Fractions")
+("dividend (thing your dividing) / divisor (thing your dividing by)")
+{'divmod_inner = (Z (fn 'divmod_inner (fn 'q (fn 'divisor (fn 'dividend
+ ((((if {dividend < divisor})
+    (fn '_ {q : dividend}))
+    (fn '_ (((divmod_inner (inc q)) divisor) {dividend - divisor})))
+  nil)
+)))))}
+{'divmod = (divmod_inner 0)}
+
+{'div = (fn 'b (fn 'a (car {a divmod b})))}
+{'mod = (fn 'b (fn 'a (cdr {a divmod b})))}
+
+((def mod) '%)
+
+{'gcd = (Z (fn 'gcd (fn 'a (fn 'b
+  ((((if {b eq 0})
+     (fn '_ a))
+     (fn '_ ((gcd b) {a % b})))
+   nil)
+))))}
+
+{'frac = (fn 'd (fn 'n {'frac : { n : d }}))}
+((def frac) '/)
+
+{'is_frac = {car |> (eq 'frac)}}
+
+{'num = {cdr |> car}}
+{'denom = {cdr |> cdr}}
+
+{'fadd = (fn 'a (fn 'b {
+  {(num a) + (num b)} /
+  {(denom a) * (denom b)}
+}))}
+
+{'fmul = (fn 'a (fn 'b {
+  {(num a) * (num b)} /
+  {(denom a) * (denom b)}
+}))}
+
+{'fsimplify = (fn 'f ((fn 's
+  {(s (num f)) / (s (denom f))}
+) (div ((gcd (num f)) (denom f)))))}
+
+{'fmt_frac = (fn 'f {(num f) .. { "/" .. (denom f)}})}
+
+("== Lists")
+("use [1 2 3] to make a list")
+
+((def (fn 'n (fn 'list
+  ((((if ((eq n) 0))
+     (fn '_ (car list)))
+     (fn '_ ((nth (dec n)) (cdr list))))
+   nil))))
+'nth)
+
+{'fmt_list_inner = (Z (fn 'fmt_list_inner (fn 'acc (fn 'rest
+  (((if {rest eq nil})
+    ((log "acc") acc))
+    ((fmt_list_inner {acc .. {" " .. (car rest)}}) (cdr rest)))
+))))}
+{'fmt_list = (fn 'lst ((fmt_list_inner "") lst))}

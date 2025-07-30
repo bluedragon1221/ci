@@ -1,0 +1,15 @@
+("== Church integers")
+{'zero = (fn 'f (fn 'x x))}
+{'succ = (fn 'n (fn 'f {f . (n f)}))}
+("Use #<int> syntax to make church integer")
+
+{'ch_add = (fn 'm (fn 'n (fn 'f {(m f) . (n f)})))}
+{'ch_mul = (fn 'm (fn 'n (fn 'f ((m (n f))))))}
+
+((def ch_add) 'ch+)
+((def ch_mul) 'ch*)
+
+("Max value is #1674 (on my computer) anything else overflows stack")
+{'to_int = (fn 'n ((n inc) 0))}
+
+

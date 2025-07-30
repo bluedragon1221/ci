@@ -1,6 +1,6 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::rc::Rc;
 
-use crate::parsers::CIEvalError;
+use crate::{env::Environment, parsers::CIEvalError};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Value {
@@ -16,7 +16,7 @@ impl std::fmt::Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Value::Int(i) => write!(f, "{}", i),
-            Value::String(i) => write!(f, "\"{}\"", i),
+            Value::String(i) => write!(f, "{}", i),
             Value::Symbol(i) => write!(f, "{}", i),
             Value::Ident(i) => write!(f, "'{}", i),
             Value::True => write!(f, "t"),
@@ -27,14 +27,15 @@ impl std::fmt::Display for Value {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Token {
-    LParen,
     Value(Value),
+    Hash,
+    LParen,
     RParen,
-    EOF,
     LCurly,
     RCurly,
     LBracket,
     RBracket,
+    EOF,
 }
 
 impl Token {
@@ -61,22 +62,24 @@ impl Token {
 pub enum IntermediateToken {
     LParen(i32),
     Value(Value),
+    Hash,
     RParen(i32),
     LCurly(i32),
     RCurly(i32),
     LBracket(i32),
     RBracket(i32),
-    EOF,
     AstNode(AstNode),
+    EOF,
 }
 
 #[derive(Clone)]
 pub enum Function {
     Native(Rc<dyn Fn(AstNode) -> Result<AstNode, CIEvalError>>),
+    NativeMutEnv(Rc<dyn Fn(AstNode, Environment) -> Result<(AstNode, Environment), CIEvalError>>),
     User {
         varname: String,
         body: Box<AstNode>,
-        env: Rc<RefCell<HashMap<String, AstNode>>>
+        env: Environment
     },
 }
 
@@ -84,7 +87,9 @@ impl std::fmt::Debug for Function {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Function::Native(_) => write!(f, "<native fn>"),
-            Function::User { varname: _, body: _, env: _ } => write!(f, "{:?}", self),
+            Function::NativeMutEnv(_) => write!(f, "<native fn>"),
+            // Function::User { varname: _, body: _, env: _ } => write!(f, "{:?}", self), // this overflows the stack when it tries to render the body of a recursive function
+            Function::User { varname, body: _, env: _ } => write!(f, "<user fn {varname}>")
         }
     }
 }
@@ -93,7 +98,9 @@ impl std::fmt::Display for Function {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Function::Native(_) => write!(f, "<native fn>"),
-            Function::User { varname, body, env: _ } => write!(f, "λ{} -> {}", varname, body),
+            Function::NativeMutEnv(_) => write!(f, "<native fn>"),
+            // Function::User { varname, body, env: _ } => write!(f, "λ{} -> {}", varname, body),
+            Function::User { varname, body: _, env: _ } => write!(f, "<user fn {varname}>")
         }
     }
 }

@@ -113,6 +113,26 @@ fn parse_token(
 ) -> Result<AstNode, CIParserError> {
     match token {
         IntermediateToken::Value(v) => Ok(AstNode::Value(v)),
+
+        // Add support for Church numeral prefix: #7
+        IntermediateToken::Hash => {
+            match stream.next() {
+                Some(IntermediateToken::Value(Value::Int(n))) if n >= 0 => {
+                    // Build Church numeral: succ^n zero
+                    let mut node = AstNode::Value(Value::Symbol("zero".to_string()));
+                    for _ in 0..n {
+                        node = AstNode::Par {
+                            car: Box::new(AstNode::Value(Value::Symbol("succ".to_string()))),
+                            cdr: Box::new(node),
+                        };
+                    }
+                    Ok(node)
+                }
+                Some(other) => Err(CIParserError::UnexpectedToken(Box::new(other))),
+                None => Err(CIParserError::UnexpectedToken(Box::new(IntermediateToken::EOF))),
+            }
+        }
+        
         IntermediateToken::AstNode(n) => Ok(n),
         IntermediateToken::LParen(level) => parse_paren(stream, level),
         IntermediateToken::LCurly(level) => parse_infix(stream, level),
@@ -233,6 +253,6 @@ impl Parser for CINewFileParser {
             }
         }
 
-        Ok(forms)       
+        Ok(forms)
     }
 }
