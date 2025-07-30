@@ -62,6 +62,13 @@ Now we can call it just like any other function:
 6
 ```
 
+### Functions
+You define a function in this form: `((def body) 'name)`.
+Yes, it might seem a little backwards to put the body before the name, but it makes sense once we introduce infix syntax later.
+This also introduces quote `'` syntax.
+Quoting means that you are refering to the _literal symbol_.
+If we were instead to just put `name` in our function declaration, it would immediately try to look up `name` in the environment, see that it does not exist, and error.
+
 ### Infix
 At this point, the `((f b) a)` pattern is getting annoying.
 In some cases, the order "a f b" might make more sense.
