@@ -1,87 +1,61 @@
-((def def) '=)
+((def (fn 'f (fn 'g (fn 'x (g (f x)))))) 'compose)
+((def (fn 'f (fn 'g ((compose g) f)))) 'pipe)
 
-((def (fn 'f (fn 'g (fn 'comp_x (g (f comp_x)))))) 'compose)
-((def compose) '.)
-
-((def (fn 'f (fn 'g {f . g}))) 'pipe)
-((def pipe) '|>)
-
-("The language does not have named recursion, so we use the Z-combinator to define recursive relationships")
 ((def (fn 'f
     ((fn 'x (f (fn 'v ((x x) v))))
      (fn 'x (f (fn 'v ((x x) v)))))
   ))
 'Z)
 
-{'not = (fn 'x (((if x) nil) t))}
-
-("Strings stuff")
-((def str_concat) '..)
-
-("Sugars for builtins")
-((def lt) '<)
-((def add) '+)
-((def sub) '-)
-((def mul) '*)
-
-{'sqr = (fn 'a {a * a})}
+("== Booleans")
+((def (fn 'x (((if x) nil) t))) 'not)
 
 ("== Cons pairs")
-{'cons = (fn 'b (fn 'a (fn 'u ((u a) b))))}
-((def cons) ':)
+((def (fn 'b (fn 'a (fn 'u ((u a) b))))) 'cons)
+((def (fn 'p (p (fn 'car_x (fn 'y car_x))))) 'car)
+((def (fn 'p (p (fn 'cdr_x (fn 'y y))))) 'cdr)
+((def (fn 'p ((cons (car p)) (cdr p)))) 'swap)
 
-{'car = (fn 'p (p (fn 'car_x (fn 'y car_x))))}
-{'cdr = (fn 'p (p (fn 'cdr_x (fn 'cdr_y cdr_y))))}
-
-{'swap = (fn 'p {(cdr p) : (car p)})}
-
-{'fmt_pair = (fn 'p {"{" .. {(car p) .. { " : " .. {(cdr p) .. "}"}}}})}
+((def (fn 'p {"{" str_concat {(car p) str_concat {" : " str_concat {(cdr p) str_concat "}"}}}})) 'fmt_pair)
 
 ("== Fractions")
-("dividend (thing your dividing) / divisor (thing your dividing by)")
-{'divmod_inner = (Z (fn 'divmod_inner (fn 'q (fn 'divisor (fn 'dividend
+((def (Z (fn 'divmod_inner (fn 'q (fn 'divisor (fn 'dividend
  ((((if {dividend < divisor})
-    (fn '_ {q : dividend}))
-    (fn '_ (((divmod_inner (inc q)) divisor) {dividend - divisor})))
+    (fn '_ {q cons dividend}))
+    (fn '_ (((divmod_inner (inc q)) divisor) {dividend sub divisor})))
   nil)
-)))))}
-{'divmod = (divmod_inner 0)}
+)))))) 'divmod_inner)
+((def (divmod_inner 0)) 'divmod)
 
-{'div = (fn 'b (fn 'a (car {a divmod b})))}
-{'mod = (fn 'b (fn 'a (cdr {a divmod b})))}
+((def (fn 'b (fn 'a (car {a divmod b})))) 'div)
+((def (fn 'b (fn 'a (cdr {a divmod b})))) 'mod)
 
-((def mod) '%)
-
-{'gcd = (Z (fn 'gcd (fn 'a (fn 'b
+((def (Z (fn 'gcd (fn 'a (fn 'b
   ((((if {b eq 0})
      (fn '_ a))
-     (fn '_ ((gcd b) {a % b})))
+     (fn '_ ((gcd b) {a mod b})))
    nil)
-))))}
+))))) 'gcd)
 
-{'frac = (fn 'd (fn 'n {'frac : { n : d }}))}
-((def frac) '/)
+((def (fn 'd (fn 'n {'frac cons {n cons d}}))) 'frac)
+((def (eq 'frac)) 'is_frac)
 
-{'is_frac = {car |> (eq 'frac)}}
+((def (fn 'f (car (cdr f)))) 'num)
+((def (fn 'f (cdr (cdr f)))) 'denom)
 
-{'num = {cdr |> car}}
-{'denom = {cdr |> cdr}}
+((def (fn 'a (fn 'b
+  {{(num a) add (num b)} frac {(denom a) mul (denom b)}}
+))) 'fadd)
 
-{'fadd = (fn 'a (fn 'b {
-  {(num a) + (num b)} /
-  {(denom a) * (denom b)}
-}))}
+((def (fn 'a (fn 'b
+  {{(num a) mul (num b)} frac {(denom a) mul (denom b)}}
+))) 'fmul)
 
-{'fmul = (fn 'a (fn 'b {
-  {(num a) * (num b)} /
-  {(denom a) * (denom b)}
-}))}
+((def (fn 'f ((fn 's
+  {(s (num f)) frac (s (denom f))}
+) (div ((gcd (num f)) (denom f)))))) 'fsimplify)
 
-{'fsimplify = (fn 'f ((fn 's
-  {(s (num f)) / (s (denom f))}
-) (div ((gcd (num f)) (denom f)))))}
-
-{'fmt_frac = (fn 'f {(num f) .. { "/" .. (denom f)}})}
+((def (fn 'f {(num f) str_concat {"/" str_concat (denom f)}})) 'fmt_frac)
 
 ("== Lists")
 ("use [1 2 3] to make a list")
@@ -93,9 +67,9 @@
    nil))))
 'nth)
 
-{'fmt_list_inner = (Z (fn 'fmt_list_inner (fn 'acc (fn 'rest
+((def (Z (fn 'fmt_list_inner (fn 'acc (fn 'rest
   (((if {rest eq nil})
     ((log "acc") acc))
-    ((fmt_list_inner {acc .. {" " .. (car rest)}}) (cdr rest)))
-))))}
-{'fmt_list = (fn 'lst ((fmt_list_inner "") lst))}
+    ((fmt_list_inner {acc str_concat {" " str_concat (car rest)}}) (cdr rest)))
+))))) 'fmt_list_inner)
+((def (fn 'lst ((fmt_list_inner "") lst))) 'fmt_list)

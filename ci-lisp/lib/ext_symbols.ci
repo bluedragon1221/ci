@@ -1,0 +1,15 @@
+((def def) '=)
+((def compose) '.)
+((def pipe) '|>)
+
+((def str_concat) '..)
+
+((def lt) '<)
+((def add) '+)
+((def sub) '-)
+((def mul) '*)
+
+((def cons) ':)
+
+((def frac) '/)
+((def mod) '%)
