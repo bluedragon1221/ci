@@ -79,6 +79,7 @@ pub enum Function {
     User {
         varname: String,
         body: Box<AstNode>,
+        doc: Option<String>,
         env: Environment
     },
 }
@@ -89,7 +90,7 @@ impl std::fmt::Debug for Function {
             Function::Native(_) => write!(f, "<native fn>"),
             Function::NativeMutEnv(_) => write!(f, "<native fn>"),
             // Function::User { varname: _, body: _, env: _ } => write!(f, "{:?}", self), // this overflows the stack when it tries to render the body of a recursive function
-            Function::User { varname, body: _, env: _ } => write!(f, "<user fn {varname}>")
+            Function::User { varname, body: _, doc: _, env: _ } => write!(f, "<user fn {varname}>")
         }
     }
 }
@@ -100,7 +101,7 @@ impl std::fmt::Display for Function {
             Function::Native(_) => write!(f, "<native fn>"),
             Function::NativeMutEnv(_) => write!(f, "<native fn>"),
             // Function::User { varname, body, env: _ } => write!(f, "λ{} -> {}", varname, body),
-            Function::User { varname, body: _, env: _ } => write!(f, "<user fn {varname}>")
+            Function::User { varname, body: _, doc: _, env: _ } => write!(f, "<user fn {varname}>")
         }
     }
 }

@@ -1,6 +1,6 @@
 use std::{fs, rc::Rc};
 
-use crate::{ast::{AstNode, Function, Value}, env::Environment, parser_types::Parser, parsers::{CIEvalError, CIFileEvaluator, CIFullFileParser}};
+use crate::{ast::{AstNode, Function, Value}, env::Environment, native_fn, parser_types::Parser, parsers::{CIEvalError, CIFileEvaluator, CIFullFileParser}};
 
 pub fn prelude_environment(env: Environment) -> Environment {
     let env = env.insert(
@@ -75,6 +75,24 @@ pub fn prelude_environment(env: Environment) -> Environment {
             }))))
         })))
     );
+
+    let env = env.insert("doc", native_fn!(
+        (AstNode::Value(Value::String(doc)), AstNode::Function(Function::User {varname, body, doc: _, env})), {
+            Ok(AstNode::Function(Function::User {
+                varname, body, doc: Some(doc.to_string()), env
+            }))
+        }
+    ));
+
+    let env = env.insert("help", native_fn!(
+        (AstNode::Function(Function::User {varname: _, body: _, doc, env: _})), {
+                if let Some(desc) = doc {
+                    Ok(AstNode::Value(Value::String(desc)))
+                } else {
+                    Ok(AstNode::Value(Value::String("Couldn't find docs for this function".to_string())))
+                }
+        }
+    ));
 
     let env = env.insert(
         "include",

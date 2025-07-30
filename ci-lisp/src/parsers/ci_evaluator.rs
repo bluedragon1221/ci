@@ -46,7 +46,7 @@ impl CIFileEvaluator {
                     AstNode::Function(Function::Native(f)) => Ok((f(arg)?, env)),
                     AstNode::Function(Function::NativeMutEnv(f)) => Ok(f(arg, env)?),
 
-                    AstNode::Function(Function::User { varname, body, env: func_env }) => {
+                    AstNode::Function(Function::User { varname, body, doc: _, env: func_env }) => {
                         let (res, _) = self.eval_node(&body, func_env.insert(&varname, arg))?;
                         Ok((res, env))
                     }
@@ -59,6 +59,7 @@ impl CIFileEvaluator {
                 Ok((AstNode::Function(Function::User {
                     varname: varname.clone(),
                     body: Box::new(*body.clone()),
+                    doc: None,
                     env: env.clone(),
                 }), env))
             },
