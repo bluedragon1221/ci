@@ -38,7 +38,7 @@ impl<P: Default> Default for CITermRepl<P> {
 
 impl<P, O> Repl for CITermRepl<P>
 where
-    O: IntoIterator<Item: std::fmt::Display>,
+    O: IntoIterator<Item: std::fmt::Debug>,
     P: Parser<Input = String, Output = O>
 {
     type Input = String;
@@ -61,7 +61,7 @@ where
 
     fn print(&self, output: Self::Output) -> Result<(), CIReplError> {
         for i in output.into_iter() {
-            println!("{}", i);
+            println!("{:?}", i);
         }
 
         Ok(())

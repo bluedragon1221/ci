@@ -53,16 +53,6 @@ pub fn prelude_environment(env: Environment) -> Environment {
     );
 
     let env = env.insert(
-        "log",
-        AstNode::Function(Function::Native(Rc::new(|msg: AstNode| {
-            Ok(AstNode::Function(Function::Native(Rc::new(move |body: AstNode| {
-                println!("[log] {msg}");
-                Ok(body)
-            }))))
-        })))
-    );
-
-    let env = env.insert(
         "def",
         AstNode::Function(Function::Native(Rc::new(|body: AstNode| {
             Ok(AstNode::Function(Function::NativeMutEnv(Rc::new(move |name: AstNode, env1: Environment| {
@@ -84,15 +74,10 @@ pub fn prelude_environment(env: Environment) -> Environment {
         }
     ));
 
-    let env = env.insert("help", native_fn!(
-        (AstNode::Function(Function::User {varname: _, body: _, doc, env: _})), {
-                if let Some(desc) = doc {
-                    Ok(AstNode::Value(Value::String(desc)))
-                } else {
-                    Ok(AstNode::Value(Value::String("Couldn't find docs for this function".to_string())))
-                }
-        }
-    ));
+    let env = env.insert("help", AstNode::Function(Function::NativeMutEnv(Rc::new(|arg: AstNode, env: Environment| {
+        arg.help(env.clone())?;
+        Ok((AstNode::Value(Value::Nil), env))
+    }))));
 
     let env = env.insert(
         "include",

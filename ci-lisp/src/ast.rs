@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use crate::{env::Environment, parsers::CIEvalError};
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum Value {
     Int(i32),
     String(String), // "var"
@@ -10,6 +10,20 @@ pub enum Value {
     Ident(String), // 'var
     True,
     Nil
+}
+
+impl std::fmt::Debug for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Value::Int(i) => write!(f, "{}", i),
+            Value::String(i) => write!(f, "\"{}\"", i),
+            Value::Symbol(i) => write!(f, "{}", i),
+            Value::Ident(i) => write!(f, "'{}", i),
+            Value::True => write!(f, "t"),
+            Value::Nil => write!(f, "nil")
+        }
+    }
+    
 }
 
 impl std::fmt::Display for Value {
@@ -106,7 +120,7 @@ impl std::fmt::Display for Function {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum AstNode {
     Value(Value),
     Par {
@@ -127,13 +141,80 @@ impl Default for AstNode {
     }
 }
 
+impl std::fmt::Debug for AstNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AstNode::Value(value) => write!(f, "{:?}", value),
+            AstNode::Par { car, cdr } => write!(f, "({} {})", car, cdr),
+            AstNode::Lambda { varname, body } => write!(f, "(fn '{} {})", varname, body),
+            AstNode::Function(function) => write!(f, "{}", function),
+        }
+    }
+}
+
 impl std::fmt::Display for AstNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             AstNode::Value(value) => write!(f, "{}", value),
             AstNode::Par { car, cdr } => write!(f, "({} {})", car, cdr),
-            AstNode::Lambda { varname, body } => write!(f, "λ{} -> {}", varname, body),
+            AstNode::Lambda { varname, body } => write!(f, "(fn '{} {})", varname, body),
             AstNode::Function(function) => write!(f, "{}", function),
         }
+    }
+}
+
+impl AstNode {
+    pub fn help(&self, env: Environment) -> Result<(), CIEvalError> {
+        match self {
+            AstNode::Value(Value::Int(i)) => {
+                println!("**Type:** Int");
+                println!("**Value:** {i:?}");
+            }
+            AstNode::Value(Value::String(s)) => {
+                println!("**Type:** String");
+                println!("**Value:** {s:?}");
+            }
+            AstNode::Value(Value::True) => println!("**Value:** t"),
+            AstNode::Value(Value::Nil) =>  println!("**Value:** nil"),
+
+            AstNode::Function(Function::User {varname, body, doc, env: _}) => {
+                if let Some(desc) = doc {
+                    println!("**Description**:");
+                    println!("{}\n",
+                        desc
+                            .split_terminator('\n')
+                            .map(|x| format!("> {x}"))
+                            .collect::<Vec<_>>()
+                            .join("\n")
+                    );
+                }
+                println!("**Definition:**");
+                println!("```lisp");
+                println!("(fn '{varname} {body})");
+                println!("```");
+            }
+            AstNode::Function(Function::Native(_)) | AstNode::Function(Function::NativeMutEnv(_)) => {
+                println!("Native Function");
+            }
+
+            AstNode::Value(Value::Symbol(_)) => unreachable!(), // these would have already been evaluated by now
+            AstNode::Par { car: _, cdr: _ } => unreachable!(),
+            AstNode::Lambda {varname: _, body: _} => unreachable!(),
+
+            AstNode::Value(Value::Ident(i)) => {
+                let val = env.get(&i)
+                    .ok_or(CIEvalError::UnknownSymbol(i.clone()))?;
+
+                match val {
+                    AstNode::Function(Function::User {varname: _, body: _, doc: _, env: _}) => {
+                        println!("**Function:** `{}`\n", &i);
+                        val.help(env.clone())?;
+                    }
+                    a => a.help(env.clone())?
+                }
+            }
+        };
+
+        Ok(())
     }
 }
