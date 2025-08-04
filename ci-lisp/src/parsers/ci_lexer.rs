@@ -49,10 +49,7 @@ pub struct CILexer {}
 impl CILexer {
     fn handle_char(ch: char, state: &mut CILexerState) -> Result<(), CILexerError> {
         match ch {
-            ' ' if !state.in_string => {
-                state.flush_word()
-            },
-            '\n' if !state.in_string => {
+            ' ' | '\n' | '\t' if !state.in_string => {
                 state.flush_word()
             },
             '"' => {
