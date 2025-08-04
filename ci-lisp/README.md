@@ -194,6 +194,78 @@ nil
 15
 ```
 
+### `map` et al.
+You can use `map` and `fold{r,l}`, just like in functional languages.
+
+When calling `map`, pass the function, then the data, like so:
+```lisp
+〉'a = [1 2 3 4 5]
+nil
+〉'b = ((map (fn 'x {x + 2})) a)
+nil
+〉(fmt_list b)
+"[ 3 4 5 6 7 ]"
+```
+
+Just like before, you don't have to pass the data right away:
+```lisp
+〉'bulk-add-two = (map (fn 'x {x + 2}))
+nil
+〉(fmt_list (bulk-add-two [1 2 3 4 5]))
+"[ 3 4 5 6 7 ]"
+```
+
+As an example of using foldl and foldr, lets write a function that multiplies a list of numbers.
+To display another feature though, let's say I forgot the order of the arguments in the `foldr` function.
+````lisp
+〉(help foldr)
+**Description**:
+> Applies the foldr function.
+> Args:
+> - `f`: Define how to merge one item with the accumulator from the right. ex. `(fn 'x (fn 'acc ...))`
+> - `acc`: The default value to start with. ex. `[]`
+> - `lst`: The list of elements you're applying the fold to
+
+**Definition:**
+```lisp
+(fn 'f (fn 'acc (fn 'lst ((((if (not lst)) (fn '_ acc)) (fn '_ ((f (car lst)) (((foldr f) acc) (cdr lst))))) nil))))
+```
+nil
+````
+> (Most of the functions in `ext_math` have docs built in. Try it out!)
+
+From that information, we figure out that a sum function might look like this (I've split the accumulator function `f` into its own definition to make things cleaner):
+```lisp
+〉'f = (fn 'x (fn 'acc {x + acc}))
+nil
+〉'sum-lst = ((foldr f) 0)
+nil
+〉(sum_lst [1 2 3 4 5])
+15
+```
+
+For `foldl`, lets look at the library definition for `fmt_list` (slightly modified), which uses the `foldl` function:
+```lisp
+{'fmt_list_inner = ((foldl (fn 'acc (fn 'x {acc .. {" " .. x}}))) "")}
+{'fmt_list = (fn 'lst {"[" .. {(fmt_list_inner lst) .. " ]"}})}
+```
+
+In general, `foldl` makes more intuitive sense.
+However, if your output type is a list, consider using `foldr` instead.
+This is because there is currently no way to append to the end of a list.
+This is an explicit design choice, as `append` would have an `O(n)` time complexity, while `cons` is `O(1)`.
+See [this Stack Overflow post](https://stackoverflow.com/questions/33304408/is-it-faster-traditional-to-use-append-vs-cons-and-reverse-in-scheme) for more information.
+
+As an example of `foldr` with lists, lets look at the library definition of `map`, which is defined using foldr.
+```lisp
+{'map = (fn 'f
+  ((foldr (fn 'x (fn 'acc {(f x) : acc}))) [])
+)}
+```
+If you think about it, its kinda backwards.
+Think about it as starting from the _right_, and moving left, building your list by placing items at the beginning.
+Its quite elegant, isn't it?
+
 ---
 
 That's all for now! As I add new features, I'll update this document accordingly.

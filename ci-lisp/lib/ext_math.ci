@@ -1,9 +1,10 @@
-("Point-Free stuff")
-((def ((doc "Create the composition f(g(x)) from function arguments g and f") (fn 'g (fn 'f (fn 'x (f (g x))))))) 'compose)
+("Pointfree stuff")
+((def ((doc "Create the composition (f (g x)) from function arguments g and f") (fn 'g (fn 'f (fn 'x (f (g x))))))) 'compose)
 ((def (fn 'f (fn 'g ((compose g) f)))) 'pipe)
 
 ((def (fn 'a (fn 'x a))) 'const)
 ((def (fn 'x x)) 'id)
+((def (fn 'f (fn 'x (fn 'y ((f y) x))))) 'flip)
 
 ((def (fn 'f
     ((fn 'x (f (fn 'v ((x x) v))))
@@ -11,11 +12,13 @@
   ))
 'Z)
 
+((def (fn 'f (fn 'x (f x)))) 'let)
+
 ("== Booleans")
 ((def (fn 'x (((if x) nil) t))) 'not)
 
 ("== Cons pairs")
-((def ((doc "Creates a new pair, given two elements") (fn 'b (fn 'a (fn 'u ((u a) b)))))) 'cons)
+((def ((doc "Constructs a pair, given two elements") (fn 'b (fn 'a (fn 'u ((u a) b)))))) 'cons)
 ((def ((doc "Gets the first element of a given pair") (fn 'p (p (fn 'car_x (fn 'y car_x)))))) 'car)
 ((def ((doc "Gets the second/last element of a given pair") (fn 'p (p (fn 'cdr_x (fn 'y y)))))) 'cdr)
 ((def ((doc "Reverses a given pair. `{a : b}` => `{b : a}`") (fn 'p ((cons (car p)) (cdr p))))) 'swap)
@@ -23,16 +26,16 @@
 ((def ((doc "Formats a pair as a string to view its contents") (fn 'p {"{" str_concat {(car p) str_concat {" : " str_concat {(cdr p) str_concat "}"}}}}))) 'fmt_pair)
 
 ("== Fractions")
-((def (Z (fn 'divmod_inner (fn 'q (fn 'divisor (fn 'dividend
- ((((if {dividend < divisor})
+((def ((doc "Given an integer dividend and divisor, compute their quotient and remainder, returned as a tuple {quotient : remainder}") ((Z (fn 'divmod_inner (fn 'q (fn 'divisor (fn 'dividend
+ ((((if {dividend lt divisor})
     (fn '_ {q cons dividend}))
     (fn '_ (((divmod_inner (inc q)) divisor) {dividend sub divisor})))
   nil)
-)))))) 'divmod_inner)
-((def ((doc "Given an integer dividend and divisor, compute their quotient and remainder, returned as a tuple {quotient : remainder}") (divmod_inner 0))) 'divmod)
+))))) 0))) 'divmod)
 
-((def (fn 'b (fn 'a (car {a divmod b})))) 'div)
-((def (fn 'b (fn 'a (cdr {a divmod b})))) 'mod)
+("Pointfree derivations ftw")
+((def ((flip ((compose divmod) compose)) car)) 'div)
+((def ((flip ((compose divmod) compose)) cdr)) 'mod)
 
 ((def (Z (fn 'gcd (fn 'a (fn 'b
   ((((if {b eq 0})
@@ -42,7 +45,7 @@
 ))))) 'gcd)
 
 ((def ((doc "Create a new fraction, given a numerator and denominator") (fn 'd (fn 'n {'frac cons {n cons d}})))) 'frac)
-((def ((compose car) (eq 'frac)) 'is_frac)
+((def ((compose car) (eq 'frac))) 'is_frac)
 
 ((def ((compose cdr) car)) 'num)
 ((def ((compose cdr) cdr)) 'denom)
@@ -55,11 +58,15 @@
   {{(num a) mul (num b)} frac {(denom a) mul (denom b)}}
 )))) 'fmul)
 
-((def ((doc "Simplify a fraction") (fn 'f ((fn 's
-  {(s (num f)) frac (s (denom f))}
-) (div ((gcd (num f)) (denom f))))))) 'fsimplify)
+((def ((doc "Simplify a given fraction") (fn 'f
+  ((let ((gcd (num f)) (denom f)))
+    (fn 's {(s (num f)) frac (s (denom f))})
+  )
+))) 'fsimplify)
 
-((def ((doc "Format a fraction as a string to view its contents") (fn 'f {(num f) str_concat {"/" str_concat (denom f)}}))) 'fmt_frac)
+((def ((doc "Format a fraction as a string to view its contents") (fn 'f
+  {(num f) str_concat {"/" str_concat (denom f)}}
+))) 'fmt_frac)
 
 ("== Lists")
 ("use [1 2 3] to make a list")
@@ -71,11 +78,66 @@
   nil)
 )))))) 'nth)
 
-((def (Z (fn 'fmt_list_inner (fn 'acc (fn 'lst
+((def ((doc "Get the length of a given list") ((Z (fn 'len_inner (fn 'n (fn 'lst
   (
     (((if (not lst))
-      (fn '_ acc))
-      (fn '_ ((fmt_list_inner {acc str_concat {" " str_concat (car lst)}}) (cdr lst)))) 
+      (fn '_ n))
+      (fn '_ ((len_inner (inc n)) (cdr lst))))
   nil)
-))))) 'fmt_list_inner)
-((def ((doc "Format a list as a string to view its contents") ((compose (fmt_list_inner "[")) (str_concat " ]")))) 'fmt_list)
+)))) 0))) 'len)
+
+((def ((doc "Create a list of length `n` filled with item `c`") (Z (fn 'repeat (fn 'n (fn 'c
+  (
+    (((if {n eq 0})
+      (fn '_ []))
+      (fn '_ {c cons ((repeat (dec n)) c)}))
+  nil)
+)))))) 'repeat)
+
+((def ((doc "Create a list that counts from `low` to `high`") (Z (fn 'range (fn 'low (fn 'high
+  (
+    (((if {high lt low})
+      (fn '_ []))
+      (fn '_ {low cons ((range (inc low)) high)}))
+  nil)
+)))))) 'range)
+
+((def ((doc "Applies the foldr function.
+Args:
+- `f`: Define how to merge one item with the accumulator from the right. ex. `(fn 'x (fn 'acc ...))`
+- `acc`: The default value to start with. ex. `[]`
+- `lst`: The list of elements you're applying the fold to
+") (Z (fn 'foldr (fn 'f (fn 'acc (fn 'lst
+  ((((if (not lst))
+    (fn '_ acc))
+    (fn '_ ((f (car lst)) (((foldr f) acc) (cdr lst)))))
+  nil)
+))))))) 'foldr)
+
+("See https://jstolarek.github.io/posts/2012-07-30-expressing-foldl-in-terms-of-foldr.html")
+((def ((doc "Applies the foldl function.
+Args:
+- `f`: Define how you want to merge one item with the accumulator from the left. ex. `(fn 'acc (fn 'x ...))`
+- `acc`: The default value to start with. ex. `[]`
+- `lst`: The list of elements you're applying the fold to
+Note: If you're working with lists, consider using foldr.
+This allows you to use `cons` in your accumulator function, which is much more efficient (O(1)) than trying to append an item (O(n)).
+") (fn 'f (fn 'acc (fn 'lst
+  ((((foldr
+    (fn 'x (fn 'g (fn 'acc (g ((f acc) x))))) )
+    id)
+    lst)
+  acc)
+))))) 'foldl)
+
+((def ((doc "Apply a function to every argument in a list
+Args:
+- `f`: The function you want to apply
+- `lst`: The list you're acting on
+") (fn 'f
+  ((foldr (fn 'x (fn 'acc {(f x) cons acc}))) [])
+))) 'map)
+
+((def ((doc "Format a list as a string to view its contents")
+  ((compose ((foldl (fn 'acc (fn 'x {acc str_concat {" " str_concat x}}))) "[")) (str_concat " ]"))
+)) 'fmt_list)
