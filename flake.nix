@@ -4,7 +4,7 @@
     system = "x86_64-linux";
     pkgs = inputs.nixpkgs.legacyPackages.${system};
   in {
-    devShells.default = pkgs.mkShell {
+    devShells.${system}.default = pkgs.mkShell {
       packages = with pkgs; [
         rustc
         cargo
