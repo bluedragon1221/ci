@@ -98,16 +98,6 @@ impl CILexer {
         
         Ok(())
     }
-
-    fn handle_eof(state: &mut CILexerState) -> Result<(), CILexerError> {
-        if state.in_string {
-            return Err(CILexerError::UnmatchedQuotes);
-        }
-
-        state.push_token(Token::EOF);
-        
-        Ok(())
-    }
 }
 
 impl Parser for CILexer {
@@ -121,8 +111,13 @@ impl Parser for CILexer {
             Self::handle_char(i, &mut state)?;
         }
 
-        CILexer::handle_eof(&mut state)?;
+        if state.in_string {
+            return Err(CILexerError::UnmatchedQuotes)?;
+        } else {
+            state.flush_word();
+        }
 
+        state.push_token(Token::EOF);
 
         Ok(state.take_tokens())
     }
