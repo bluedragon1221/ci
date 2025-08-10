@@ -1,10 +1,12 @@
 ("Pointfree stuff")
 ((def ((doc "Create the composition (f (g x)) from function arguments g and f") (fn 'g (fn 'f (fn 'x (f (g x))))))) 'compose)
-((def (fn 'f (fn 'g ((compose g) f)))) 'pipe)
-
-((def (fn 'a (fn 'x a))) 'const)
-((def (fn 'x x)) 'id)
+((def (fn 'f (fn 'x (f x)))) 'pipe)
 ((def (fn 'f (fn 'x (fn 'y ((f y) x))))) 'flip)
+
+("// SKI combinator calculus")
+((def (fn 'f (fn 'g (fn 'a ((f a) (g a)))))) 'fork) ("aka S")
+((def (fn 'x (fn '_ x))) 'const) ("aka K")
+((def (fn 'x x)) 'id) ("aka I")
 
 ((def (fn 'f
     ((fn 'x (f (fn 'v ((x x) v))))
@@ -12,18 +14,36 @@
   ))
 'Z)
 
-((def (fn 'f (fn 'x (f x)))) 'let)
+((def (fn 'x (fn 'f (f x)))) 'let)
 
 ("== Booleans")
 ((def (fn 'x (((if x) nil) t))) 'not)
 
+((def (fn 'x (fn 'y
+  (((if x) y) nil)
+))) 'and)
+((def (fn 'x (fn 'y
+  (((if x) nil) y)
+))) 'or)
+
+((def builtin__int_add) 'add)
+((def builtin__int_sub) 'sub)
+((def builtin__int_mul) 'mul)
+
+("== String Manipulation")
+((def (fn 'sep (fn 'b (fn 'a
+  {a str_concat {sep str_concat b}}
+)))) 'join)
+
 ("== Cons pairs")
-((def ((doc "Constructs a pair, given two elements") (fn 'b (fn 'a (fn 'u ((u a) b)))))) 'cons)
+((def ((doc "Constructs a pair, given two elements") (fn 'b (fn 'a (fn 'cons_u ((cons_u a) b)))))) 'cons)
 ((def ((doc "Gets the first element of a given pair") (fn 'p (p (fn 'car_x (fn 'y car_x)))))) 'car)
 ((def ((doc "Gets the second/last element of a given pair") (fn 'p (p (fn 'cdr_x (fn 'y y)))))) 'cdr)
 ((def ((doc "Reverses a given pair. `{a : b}` => `{b : a}`") (fn 'p ((cons (car p)) (cdr p))))) 'swap)
 
-((def ((doc "Formats a pair as a string to view its contents") (fn 'p {"{" str_concat {(car p) str_concat {" : " str_concat {(cdr p) str_concat "}"}}}}))) 'fmt_pair)
+((def ((doc "Formats a pair as a string to view its contents") (fn 'p
+  {"{" (join ({(car p) (join " : ") (cdr p)})) "}"}
+))) 'fmt_pair)
 
 ("== Fractions")
 ((def ((doc "Given an integer dividend and divisor, compute their quotient and remainder, returned as a tuple {quotient : remainder}") ((Z (fn 'divmod_inner (fn 'q (fn 'divisor (fn 'dividend
@@ -33,7 +53,6 @@
   nil)
 ))))) 0))) 'divmod)
 
-("Pointfree derivations ftw")
 ((def ((flip ((compose divmod) compose)) car)) 'div)
 ((def ((flip ((compose divmod) compose)) cdr)) 'mod)
 
@@ -50,31 +69,38 @@
 ((def ((compose cdr) car)) 'num)
 ((def ((compose cdr) cdr)) 'denom)
 
-((def ((doc "Add two fractions") (fn 'a (fn 'b
-  {{(num a) add (num b)} frac {(denom a) mul (denom b)}}
-)))) 'fadd)
+((def ((doc "Add two fractions") (fn 'b (fn 'a
+  (fsimplify
+    {{{(num a) mul (denom b)} add {(num b) mul (denom a)}} frac {(denom a) mul (denom b)}}
+))))) 'fadd)
 
-((def ((doc "Multiply two fractions") (fn 'a (fn 'b
+((def ((doc "Subtract two fractions") (fn 'b (fn 'a
+  (fsimplify
+    {{{(num a) mul (denom b)} sub {(num b) mul (denom a)}} frac {(denom a) mul (denom b)}}
+))))) 'fsub)
+
+((def ((doc "Multiply two fractions") (fn 'b (fn 'a
   {{(num a) mul (num b)} frac {(denom a) mul (denom b)}}
 )))) 'fmul)
 
 ((def ((doc "Simplify a given fraction") (fn 'f
   ((let ((gcd (num f)) (denom f)))
-    (fn 's {(s (num f)) frac (s (denom f))})
+    (fn 'gcd {{(num f) div gcd} frac {(denom f) div gcd}})
   )
 ))) 'fsimplify)
 
-((def ((doc "Format a fraction as a string to view its contents") (fn 'f
-  {(num f) str_concat {"/" str_concat (denom f)}}
-))) 'fmt_frac)
+((def ((doc "Format a fraction as a string to view its contents")
+  ((fork ((compose denom) (join "/"))) num)
+)) 'fmt_frac)
 
 ("== Lists")
 ("use [1 2 3] to make a list")
 
 ((def ((doc "Get the nth item of a list. List indices start at 0") (Z (fn 'nth (fn 'n (fn 'list
-  ((((if {n eq 0})
-    (fn '_ (car list)))
-    (fn '_ ((nth (dec n)) (cdr list))))
+  (
+    (((if {n eq 0})
+      (fn '_ (car list)))
+      (fn '_ ((nth (dec n)) (cdr list))))
   nil)
 )))))) 'nth)
 
@@ -114,6 +140,8 @@ Args:
   nil)
 ))))))) 'foldr)
 
+((def ((doc "Sum a list") ((foldr (fn 'x (fn 'acc {x + acc}))) 0))) 'sum)
+
 ("See https://jstolarek.github.io/posts/2012-07-30-expressing-foldl-in-terms-of-foldr.html")
 ((def ((doc "Applies the foldl function.
 Args:
@@ -138,6 +166,24 @@ Args:
   ((foldr (fn 'x (fn 'acc {(f x) cons acc}))) [])
 ))) 'map)
 
+((def (fn 'c
+  ((foldr (fn 'x (fn 'acc
+    (((if (c x))
+      {x cons acc})
+      acc)
+  ))) [])
+)) 'filter)
+
 ((def ((doc "Format a list as a string to view its contents")
-  ((compose ((foldl (fn 'acc (fn 'x {acc str_concat {" " str_concat x}}))) "[")) (str_concat " ]"))
+  ((compose ((foldl (flip (join " "))) "[")) (str_concat " ]"))
 )) 'fmt_list)
+
+("== alists (Hashmaps)")
+((def (fn 'h {'alist cons h})) 'alist)
+((def (fn 'h {(car h) eq 'alist})) 'is_alist)
+
+((def (fn 'elem (fn 'h
+  (cdr
+    (car
+      ((filter (fn 'x {(car x) eq elem})) (cdr h))))
+))) 'get)
