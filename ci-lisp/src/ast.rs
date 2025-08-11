@@ -52,6 +52,22 @@ pub enum Token {
     EOF,
 }
 
+impl std::fmt::Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Token::Value(a) => write!(f, "{}", a),
+            Token::Hash => write!(f, "#"),
+            Token::LParen => write!(f, "("),
+            Token::RParen => write!(f, ")"),
+            Token::LCurly => write!(f, "{{"),
+            Token::RCurly => write!(f, "}}"),
+            Token::LBracket => write!(f, "["),
+            Token::RBracket => write!(f, "]"),
+            Token::EOF => Ok(()),
+        }
+    }
+}
+
 impl Token {
     pub fn guess_value(word: &str) -> Self {
         if let Ok(word_int) = word.trim().parse::<i32>() {
