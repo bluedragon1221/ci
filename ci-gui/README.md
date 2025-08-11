@@ -1,7 +1,7 @@
 # `ci-gui`
 A minimal graphical interface for [`ci-lisp`]("../ci-lisp/README.md"), using `egui`.
 
-> screenshots coming soon ;)
+![video demo](./demo.webm)
 
 ## Getting Started
 Make sure you have git, cargo, and a few runtime dependencies which are defined in [`flake.nix`]("../flake.nix").
