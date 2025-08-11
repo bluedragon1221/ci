@@ -5,7 +5,7 @@ A minimal lisp based on [Lambda Calculus](https://en.wikipedia.org/wiki/Lambda_c
 Make sure you have `git` and `cargo` installed, then clone the `ci` monorepo (its just `ci-lisp` here for now):
 ```
 git clone https://github.com/bluedragon1221/ci
-cd ci-lisp
+cd ci/ci-lisp
 ```
 
 Now you can run it:
@@ -23,7 +23,7 @@ Options:
 
 For the full ci-lisp experience, try this command
 ```
-cargo run -- --math -i lib/ext_math.ci lib/ext_symbols.ci -m
+cargo run -- --math -i ../lib/ext_math.ci ../lib/ext_symbols.ci -m
 ```
 
 ## Overview
