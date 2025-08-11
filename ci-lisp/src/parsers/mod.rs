@@ -1,6 +1,9 @@
 mod ci_lexer;
 pub use ci_lexer::{CILexerError, CILexer};
 
+mod ci_streaming_lexer;
+pub use ci_streaming_lexer::CIStreamingLexer;
+
 mod ci_intermediate_tokenizer;
 pub use ci_intermediate_tokenizer::CIIntermediateTokenizer;
 
