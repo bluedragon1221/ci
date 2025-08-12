@@ -1,4 +1,5 @@
-use ci_lisp::{env::{math::math_environment, prelude::prelude_environment, Environment}, parser_types::SeqParsers, parsers::{CIIntermediateTokenizer, CILexer, CINewReplParser, CIReplEvaluator}, repl::{CITermRepl, Repl}};
+use ci_lisp::{env::{math::math_environment, prelude::prelude_environment, Environment}, parser_types::SeqParsers, parsers::{CIIntermediateTokenizer, CILexer, CINewReplParser, CIReplEvaluator}};
+use ci_term::{CITermRepl, Repl};
 use clap::Parser;
 
 #[derive(clap::Parser, Debug)]

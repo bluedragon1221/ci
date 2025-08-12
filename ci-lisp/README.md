@@ -2,31 +2,14 @@
 A minimal lisp based on [Lambda Calculus](https://en.wikipedia.org/wiki/Lambda_calculus), focused on easy writing and easy parsing.
 
 ## Getting started
-Make sure you have `git` and `cargo` installed, then clone the `ci` monorepo (its just `ci-lisp` here for now):
-```
-git clone https://github.com/bluedragon1221/ci
-cd ci/ci-lisp
-```
-
-Now you can run it:
-```
-$ cargo run -- --help
-Usage: ci-lisp [OPTIONS]
-
-Options:
-  -i <PRELOAD>      Name of library to preload
-  -m                Treat every line as an infix {...}
-      --math        Enable built-in math functions. eg. add, sub, inc, dec, etc
-  -h, --help        Print help
-  -V, --version     Print version
-```
-
-For the full ci-lisp experience, try this command
-```
-cargo run -- --math -i ../lib/ext_math.ci ../lib/ext_symbols.ci -m
-```
+To start writing ci-lisp, you need to choose a frontend.
+Currently, there are two options:
+- [`ci-term`](../ci-term/README.md): A standard repl-like experience for ci-lisp
+- [`ci-gui`](../ci-gui/README.md): An experimental graphical interface for ci-lisp
 
 ## Overview
+Here's an overview of the ci-lisp language.
+
 ### Math
 Functions can only take one argument.
 For operations that need to take multiple arguments, we use currying or pairs

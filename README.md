@@ -8,6 +8,9 @@
         <a href="./ci-lisp/README.md"><code>ci-lisp</code></a>
       </td>
       <td>
+        <a href="./ci-term/README.md"><code>ci-term</code></a>
+      </td>
+      <td>
         <a href="./ci-gui/README.md"><code>ci-gui</code></a>
       </td>
     </tr>

@@ -1,7 +1,8 @@
 use std::cell::RefCell;
 use reedline::{DefaultPrompt, DefaultPromptSegment, Reedline, Signal};
 
-use crate::{parser_types::Parser, repl::{CIReplError, ReadSignal, Repl}};
+use ci_lisp::{parser_types::Parser};
+use crate::{CIReplError, ReadSignal, Repl};
 
 pub struct CITermRepl<P> {
     line_editor: RefCell<Reedline>,
@@ -67,3 +68,4 @@ where
         Ok(())
     }
 }
+

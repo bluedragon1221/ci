@@ -640,17 +640,25 @@ dependencies = [
 name = "ci-lisp"
 version = "0.1.0"
 dependencies = [
- "clap",
  "im",
+ "thiserror 2.0.13",
+]
+
+[[package]]
+name = "ci-term"
+version = "0.1.0"
+dependencies = [
+ "ci-lisp",
+ "clap",
  "reedline",
- "thiserror 2.0.12",
+ "thiserror 2.0.13",
 ]
 
 [[package]]
 name = "clap"
-version = "4.5.43"
+version = "4.5.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50fd97c9dc2399518aa331917ac6f274280ec5eb34e555dd291899745c48ec6f"
+checksum = "1c1f056bae57e3e54c3375c41ff79619ddd13460a17d7438712bd0d83fda4ff8"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -658,9 +666,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.5.43"
+version = "4.5.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c35b5830294e1fa0462034af85cc95225a4cb07092c088c55bda3147cfcd8f65"
+checksum = "b3e7f4214277f3c7aa526a59dd3fbe306a370daee1f8b7b8c987069cd8e888a8"
 dependencies = [
  "anstream",
  "anstyle",
@@ -1787,7 +1795,7 @@ dependencies = [
  "once_cell",
  "rustc-hash 1.1.0",
  "strum",
- "thiserror 2.0.12",
+ "thiserror 2.0.13",
  "unicode-ident",
 ]
 
@@ -2417,9 +2425,9 @@ dependencies = [
 
 [[package]]
 name = "reedline"
-version = "0.40.0"
+version = "0.41.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5cdfab7494d13ebfb6ce64828648518205d3ce8541ef1f94a27887f29d2d50b"
+checksum = "b627c435d0189363b15f885f1b07193d310ec9e4e39c5627951c6e0f4d02c93a"
 dependencies = [
  "chrono",
  "crossterm",
@@ -2430,7 +2438,7 @@ dependencies = [
  "strip-ansi-escapes",
  "strum",
  "strum_macros",
- "thiserror 2.0.12",
+ "thiserror 2.0.13",
  "unicode-segmentation",
  "unicode-width",
 ]
@@ -2778,11 +2786,11 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "2.0.12"
+version = "2.0.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "567b8a2dae586314f7be2a752ec7474332959c6460e02bde30d702a66d488708"
+checksum = "c0b43c71ffa7199f8a00fe309ac01551e3c35105b50ceacd7f67ce080ec18fdf"
 dependencies = [
- "thiserror-impl 2.0.12",
+ "thiserror-impl 2.0.13",
 ]
 
 [[package]]
@@ -2798,9 +2806,9 @@ dependencies = [
 
 [[package]]
 name = "thiserror-impl"
-version = "2.0.12"
+version = "2.0.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f7cf42b4507d8ea322120659672cf1b9dbb93f8f2d4ecfd6e51350ff5b17a1d"
+checksum = "c65da2500f2800e48970ef01d47aeb80e328e38adf723def51b5ad1d0a8ca03e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3285,7 +3293,7 @@ dependencies = [
  "raw-window-handle",
  "rustc-hash 1.1.0",
  "smallvec",
- "thiserror 2.0.12",
+ "thiserror 2.0.13",
  "wgpu-core-deps-windows-linux-android",
  "wgpu-hal",
  "wgpu-types",
@@ -3315,7 +3323,7 @@ dependencies = [
  "portable-atomic",
  "raw-window-handle",
  "renderdoc-sys",
- "thiserror 2.0.12",
+ "thiserror 2.0.13",
  "wgpu-types",
 ]
 
@@ -3329,7 +3337,7 @@ dependencies = [
  "bytemuck",
  "js-sys",
  "log",
- "thiserror 2.0.12",
+ "thiserror 2.0.13",
  "web-sys",
 ]
 

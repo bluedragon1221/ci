@@ -1,4 +1,7 @@
-use crate::parser_types::CIParserError;
+mod ci_term_repl;
+pub use ci_term_repl::CITermRepl;
+
+use ci_lisp::parser_types::CIParserError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum CIReplError {
@@ -39,5 +42,3 @@ pub trait Repl {
     }
 }
 
-mod ci_term_repl;
-pub use ci_term_repl::{CITermRepl};
