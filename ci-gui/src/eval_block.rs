@@ -203,7 +203,7 @@ impl LispEvalBlock {
     pub fn eval_block<P, T>(&mut self, evaluator: &mut P)
     where
         T: std::fmt::Display + 'static + Clone,
-        P: Parser<Input = String, Output = Vec<T>>,
+        P: Parser<Input = String, Output = T>,
     {
         let res = evaluator.parse(self.input_text.clone());
         self.output_text = match res {
