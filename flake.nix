@@ -9,26 +9,24 @@
       ] (system: function inputs.nixpkgs.legacyPackages.${system});
 
     commonArgs = pkgs: {
-      RUST_LOG = "debug";
-      RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
-      LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath (with pkgs; [
-        libGL
-        libxkbcommon
-        wayland
-      ]);
     };
   in {
     devShells = forAllSystems (pkgs: {
-      default = pkgs.mkShell (
-        (commonArgs pkgs)
-        // {
-          packages = with pkgs; [
-            cargo
-            rustc
-            rust-analyzer
-          ];
-        }
-      );
+      default = pkgs.mkShell {
+        packages = with pkgs; [
+          cargo
+          rustc
+          rust-analyzer
+        ];
+
+        RUST_LOG = "debug";
+        RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
+        LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath (with pkgs; [
+          libGL
+          libxkbcommon
+          wayland
+        ]);
+      };
     });
 
     packages = forAllSystems (pkgs: {
