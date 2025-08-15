@@ -1,5 +1,11 @@
-use ci_lisp::{ast::{Token, Value}, parser_types::Parser, parsers::CIStreamingLexer};
+use ci_lisp::{ast::{Function, Token, Value}, parser_types::Parser, parsers::CIStreamingLexer};
 use egui::Event;
+
+pub enum OutputType {
+    Raw(Box<dyn std::fmt::Display>),
+    Error(String),
+    Graph(Function)
+}
 
 #[derive(Default)]
 pub struct LispEvalBlock {
@@ -8,7 +14,7 @@ pub struct LispEvalBlock {
     input_text: String,
     cursor_pos: usize,
 
-    output_text: Option<Box<dyn std::fmt::Display>> // later we could add different types of output, such as graphs or tables
+    output_text: Option<OutputType>
 }
 
 impl LispEvalBlock {
@@ -17,6 +23,9 @@ impl LispEvalBlock {
     }
     pub fn set_input_text(&mut self, t: String) {
         self.input_text = t
+    }
+    pub fn get_input_text(&self) -> &str {
+        &self.input_text
     }
     
     fn insert_char(&mut self, ch: char) {
@@ -127,18 +136,33 @@ impl LispEvalBlock {
         result
     }
 
+    pub fn draw_block_background(&mut self, ui: &mut egui::Ui, font_id: &egui::FontId, row_height: f32) {
+        let available_width = ui.available_width();
+        let row_height = font_id.size + row_height; // input line + padding
+
+        if self.is_selected {
+            let bg_color = egui::Color32::from_rgb(60, 60, 60); // lighter gray
+            let rect = egui::Rect::from_min_size(ui.cursor().min, egui::vec2(available_width, row_height));
+            ui.painter().rect_filled(rect, 4.0, bg_color);
+
+            ui.painter().rect_stroke(rect, 4.0, egui::Stroke::new(2.0, egui::Color32::from_rgb(120, 200, 255)), egui::StrokeKind::Outside);
+        } else {
+            let bg_color = egui::Color32::from_rgb(45, 45, 45); // lighter gray
+            let rect = egui::Rect::from_min_size(ui.cursor().min, egui::vec2(available_width, row_height));
+            ui.painter().rect_filled(rect, 4.0, bg_color);
+        }
+
+    }
+
     pub fn show(&mut self, ui: &mut egui::Ui) {
         let font_id = egui::FontId::monospace(20.0);
 
         // Measure space for background rect
-        let available_width = ui.available_width();
-        let row_height = font_id.size + 8.0; // input line + padding
+        let row_height = if self.output_text.is_some() { 32.0 } else { 12.0 };
+        self.draw_block_background(ui, &font_id, row_height);
 
-        let bg_color = egui::Color32::from_rgb(60, 60, 60); // lighter gray
-        let rect = egui::Rect::from_min_size(ui.cursor().min, egui::vec2(available_width, row_height));
-        ui.painter().rect_filled(rect, 4.0, bg_color);
-
-        let mut pos_x = ui.cursor().min.x;
+        let mut pos_x = ui.cursor().min.x + 4.0;
+        let start_y = ui.cursor().min.y + 4.0;
 
         // Tokenize
         let tokens = CIStreamingLexer::default()
@@ -156,7 +180,7 @@ impl LispEvalBlock {
             let color = Self::token_color(&token);
 
             let galley = ui.painter().layout_no_wrap(token_str.clone(), font_id.clone(), color);
-            ui.painter().galley(egui::pos2(pos_x, ui.cursor().min.y), galley.clone(), color);
+            ui.painter().galley(egui::pos2(pos_x, start_y), galley.clone(), color);
 
             if !caret_set && self.cursor_pos <= char_index + token_str.len() {
                 let chars_before = self.cursor_pos - char_index;
@@ -179,7 +203,7 @@ impl LispEvalBlock {
         // Caret only if selected
         if self.is_selected {
             let caret_rect = egui::Rect::from_min_size(
-                egui::pos2(caret_x, ui.cursor().min.y),
+                egui::pos2(caret_x, start_y),
                 egui::vec2(1.0, font_id.size),
             );
             ui.painter().rect_filled(caret_rect, 0.0, egui::Color32::WHITE);
@@ -188,15 +212,28 @@ impl LispEvalBlock {
         // Output text
         if let Some(output) = &self.output_text {
             let output_font = egui::FontId::monospace(16.0);
-            let output_color = egui::Color32::from_gray(180);
 
-            let output_galley = ui.painter().layout_no_wrap(output.to_string(), output_font, output_color);
-            let output_pos = egui::pos2(ui.cursor().min.x, ui.cursor().min.y + font_id.size + 4.0);
-            ui.painter().galley(output_pos, output_galley.clone(), output_color);
+            match output {
+                OutputType::Raw(display) => {
+                    let output_color = egui::Color32::from_gray(180);
 
-            ui.add_space(font_id.size + output_galley.size().y + 8.0);
+                    let output_galley = ui.painter().layout_no_wrap(display.to_string(), output_font, output_color);
+                    let output_pos = egui::pos2(ui.cursor().min.x, ui.cursor().min.y + font_id.size + 4.0);
+                    ui.painter().galley(output_pos, output_galley.clone(), output_color);
+                    ui.add_space(font_id.size + output_galley.size().y + 28.0);
+                },
+                OutputType::Error(e) => {
+                    let output_color = egui::Color32::from_rgb(255, 80, 80);
+
+                    let output_galley = ui.painter().layout_no_wrap(e.to_string(), output_font, output_color);
+                    let output_pos = egui::pos2(ui.cursor().min.x, ui.cursor().min.y + font_id.size + 4.0);
+                    ui.painter().galley(output_pos, output_galley.clone(), output_color);
+                    ui.add_space(font_id.size + output_galley.size().y + 28.0);
+                },
+                OutputType::Graph(_) => todo!(),
+            }
         } else {
-            ui.add_space(font_id.size + 8.0);
+            ui.add_space(font_id.size + 24.0);
         }
     }
 
@@ -208,10 +245,10 @@ impl LispEvalBlock {
         let res = evaluator.parse(self.input_text.clone());
         self.output_text = match res {
             Ok(s) => {
-                Some(Box::new(s[0].clone()))
+                Some(OutputType::Raw(Box::new(s.clone())))
             }
             Err(e) => {
-                Some(Box::new(format!("{}", e)))
+                Some(OutputType::Error(format!("{}", e)))
             }
         };
     }

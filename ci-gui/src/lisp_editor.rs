@@ -57,17 +57,19 @@ impl LispEditor {
             match event {
                 egui::Event::Key {key: egui::Key::Enter, pressed: true, ..} => {
                     for i in self.block.iter_mut() {
-                        i.eval_block(&mut self.evaluator);
+                        if i.get_input_text() != "" {
+                            i.eval_block(&mut self.evaluator);
+                        }
                     }
 
                     if self.selected_block == (self.block.len() - 1) {
                         self.add_block();
                     }
                 }
-                egui::Event::Key {key: egui::Key::Tab, pressed: true, modifiers,  ..} if !modifiers.shift => {
+                egui::Event::Key {key: egui::Key::ArrowDown, pressed: true, ..} => {
                     self.next_block();
                 }
-                egui::Event::Key {key: egui::Key::Tab, pressed: true, modifiers, ..} if modifiers.shift => {
+                egui::Event::Key {key: egui::Key::ArrowUp, pressed: true,..} => {
                     self.prev_block();
                 }
                 egui::Event::Key {key: egui::Key::J, pressed: true, modifiers, ..} if modifiers.ctrl => {
