@@ -68,6 +68,10 @@ fn parse_infix(
     match nodes.as_slice() {
         [] => Ok(AstNode::Value(Value::Nil)),
         [a] => Ok(a.clone()),
+        [a, b] => Ok(AstNode::Par {
+           car: Box::new(a.clone()),
+           cdr: Box::new(b.clone()) 
+        }),
         [a, b, c] => Ok(AstNode::Par {
             car: Box::new(AstNode::Par {
                 car: Box::new(b.clone()),
@@ -156,6 +160,10 @@ fn parse_virtual_infix(
     match nodes.as_slice() {
         [] => Ok(AstNode::Value(Value::Nil)),
         [a] => Ok(a.clone()),
+        [a, b] => Ok(AstNode::Par {
+           car: Box::new(a.clone()),
+           cdr: Box::new(b.clone()) 
+        }),
         [a, b, c] => Ok(AstNode::Par {
             car: Box::new(AstNode::Par {
                 car: Box::new(b.clone()),
