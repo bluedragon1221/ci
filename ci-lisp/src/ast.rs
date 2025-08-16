@@ -72,12 +72,10 @@ impl Token {
     pub fn guess_value(word: &str) -> Self {
         if let Ok(word_int) = word.trim().parse::<i32>() {
             Token::Value(Value::Int(word_int))
-        } else if (word.chars().nth(0).unwrap() == '"') && (word.chars().last().unwrap() == '"') {
-            let without_quotes = &word[1..word.len() - 1];
-            Token::Value(Value::String(without_quotes.to_string()))
-        } else if word.chars().nth(0).unwrap() == '\'' {
-            let without_quote = &word[1..];
-            Token::Value(Value::Ident(without_quote.to_string()))
+        } else if let Some(stripped) = word.strip_prefix('"').and_then(|w| w.strip_prefix('"')) {
+            Token::Value(Value::String(stripped.to_string()))
+        } else if let Some(stripped) = word.strip_prefix('\'') {
+            Token::Value(Value::Ident(stripped.to_string()))
         } else if word == "t" {
             Token::Value(Value::True)
         } else if word == "nil" {
