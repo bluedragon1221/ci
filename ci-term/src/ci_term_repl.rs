@@ -61,7 +61,7 @@ where
     }
 
     fn print(&self, output: Self::Output) -> Result<(), CIReplError> {
-        println!("{:?}", output);
+        println!("{:?}", output); // This should be Debug because we want strings to have quotes around them
 
         Ok(())
     }

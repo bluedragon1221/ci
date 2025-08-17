@@ -12,6 +12,14 @@ pub enum Value {
     Nil
 }
 
+// For a Value:
+// - In error message: strings should have quotes around them
+// - When being an argument of str_concat: strings definitely shouldn't have quotes
+// - When printing the output of a functions that returns a string: strings should have quotes
+// - When rendering in ci-gui: strings should have quotes
+// If strings should have quotes, use Debug
+// If strings shouldn't have quotes, use Display
+
 impl std::fmt::Debug for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

@@ -128,7 +128,7 @@ impl LispEvalBlock {
             (_, Some(_)) => true,  // a
         };
     
-        let mut result = current.to_string();
+        let mut result = format!("{:?}", current); // Format as debug because we want strings to have quotes around them
         if needs_space_after {
             result.push(' ');
         }

@@ -1,6 +1,6 @@
-use std::cell::RefCell;
+use std::{cell::RefCell, fs};
 
-use crate::{ast::{AstNode, Function, Value}, env::Environment, parser_types::{CIParserError, Parser}};
+use crate::{ast::{AstNode, Function, Value}, env::Environment, parser_types::{CIParserError, Parser}, parsers::CIFullFileParser};
 
 #[derive(Debug, thiserror::Error)]
 pub enum CIEvalError {
@@ -73,6 +73,23 @@ impl CIFileEvaluator {
 
             _ => Ok((node.clone(), env)),
         }
+    }
+
+    pub fn load_file(&self, filename: String) -> Result<(), CIEvalError> {
+        let source = fs::read_to_string(&filename)
+            .map_err(|_| CIEvalError::NoSuchFile(filename))?;
+
+        let parser = CIFullFileParser::default();
+        let parsed_nodes = match parser.parse(source.chars().collect()) {
+            Ok(a) => a,
+            Err(e) => return Err(CIEvalError::FileParseError(Box::new(e)))
+        };
+
+        // Evaluate each node in the current env
+        let _nodes = self.parse(parsed_nodes)
+            .map_err(|e| CIEvalError::FileParseError(Box::new(e)))?;
+
+        Ok(())
     }
 }
 

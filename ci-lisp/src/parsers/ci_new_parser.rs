@@ -1,3 +1,5 @@
+use core::mem::take;
+
 use crate::{
     ast::{AstNode, IntermediateToken, Value},
     parser_types::{CIParserError, Parser},
@@ -30,25 +32,29 @@ fn parse_paren(
         }
     }
 
-    match items.as_slice() {
-        [] => Ok(AstNode::Value(Value::Nil)),
-        [a] => Ok(a.clone()),
-        [AstNode::Value(Value::Symbol(s)), arg, body] if s == "fn" => {
-            let arg_ident = match arg {
-                AstNode::Value(Value::Ident(name)) => name.clone(),
-                _ => return Err(CIParserError::UnexpectedToken(Box::new(IntermediateToken::AstNode(arg.clone())))),
+    match items.len() {
+        0 => Ok(AstNode::Value(Value::Nil)),
+        1 => Ok(take(&mut items[0])),
+        2 => Ok(AstNode::Par {
+            car: Box::new(take(&mut items[0])),
+            cdr: Box::new(take(&mut items[1]))
+        }),
+        3 => {
+            if let AstNode::Value(Value::Symbol(s)) = &items[0] && s != "fn" {
+                return Err(CIParserError::NodeFull(items));
+            }
+
+            let arg_ident = match take(&mut items[1]) {
+                AstNode::Value(Value::Ident(name)) => name,
+                a => return Err(CIParserError::UnexpectedToken(Box::new(IntermediateToken::AstNode(a)))),
             };
 
             Ok(AstNode::Lambda {
                 varname: arg_ident,
-                body: Box::new(body.clone()),
+                body: Box::new(take(&mut items[2]))
             })
         }
-        [a, b] => Ok(AstNode::Par {
-            car: Box::new(a.clone()),
-            cdr: Box::new(b.clone()),
-        }),
-        _ => Err(CIParserError::NodeFull(items)),
+        _ => Err(CIParserError::NodeFull(items))
     }
 }
 
@@ -65,19 +71,19 @@ fn parse_infix(
         }
     }
 
-    match nodes.as_slice() {
-        [] => Ok(AstNode::Value(Value::Nil)),
-        [a] => Ok(a.clone()),
-        [a, b] => Ok(AstNode::Par {
-           car: Box::new(a.clone()),
-           cdr: Box::new(b.clone()) 
+    match nodes.len() {
+        0 => Ok(AstNode::Value(Value::Nil)),
+        1 => Ok(take(&mut nodes[0])),
+        2 => Ok(AstNode::Par {
+           car: Box::new(take(&mut nodes[0])),
+           cdr: Box::new(take(&mut nodes[1])) 
         }),
-        [a, b, c] => Ok(AstNode::Par {
+        3 => Ok(AstNode::Par {
             car: Box::new(AstNode::Par {
-                car: Box::new(b.clone()),
-                cdr: Box::new(c.clone()),
+                car: Box::new(take(&mut nodes[1])),
+                cdr: Box::new(take(&mut nodes[2])),
             }),
-            cdr: Box::new(a.clone()),
+            cdr: Box::new(take(&mut nodes[0])),
         }),
         _ => Err(CIParserError::NodeFull(nodes)),
     }
@@ -117,26 +123,6 @@ fn parse_token(
 ) -> Result<AstNode, CIParserError> {
     match token {
         IntermediateToken::Value(v) => Ok(AstNode::Value(v)),
-
-        // Add support for Church numeral prefix: #7
-        IntermediateToken::Hash => {
-            match stream.next() {
-                Some(IntermediateToken::Value(Value::Int(n))) if n >= 0 => {
-                    // Build Church numeral: succ^n zero
-                    let mut node = AstNode::Value(Value::Symbol("zero".to_string()));
-                    for _ in 0..n {
-                        node = AstNode::Par {
-                            car: Box::new(AstNode::Value(Value::Symbol("succ".to_string()))),
-                            cdr: Box::new(node),
-                        };
-                    }
-                    Ok(node)
-                }
-                Some(other) => Err(CIParserError::UnexpectedToken(Box::new(other))),
-                None => Err(CIParserError::UnexpectedToken(Box::new(IntermediateToken::EOF))),
-            }
-        }
-        
         IntermediateToken::AstNode(n) => Ok(n),
         IntermediateToken::LParen(level) => parse_paren(stream, level),
         IntermediateToken::LCurly(level) => parse_infix(stream, level),
@@ -157,19 +143,19 @@ fn parse_virtual_infix(
         }
     }
 
-    match nodes.as_slice() {
-        [] => Ok(AstNode::Value(Value::Nil)),
-        [a] => Ok(a.clone()),
-        [a, b] => Ok(AstNode::Par {
-           car: Box::new(a.clone()),
-           cdr: Box::new(b.clone()) 
+    match nodes.len() {
+        0 => Ok(AstNode::Value(Value::Nil)),
+        1 => Ok(take(&mut nodes[0])),
+        2 => Ok(AstNode::Par {
+           car: Box::new(take(&mut nodes[0])),
+           cdr: Box::new(take(&mut nodes[1])) 
         }),
-        [a, b, c] => Ok(AstNode::Par {
+        3 => Ok(AstNode::Par {
             car: Box::new(AstNode::Par {
-                car: Box::new(b.clone()),
-                cdr: Box::new(c.clone()),
+                car: Box::new(take(&mut nodes[1])),
+                cdr: Box::new(take(&mut nodes[2])),
             }),
-            cdr: Box::new(a.clone()),
+            cdr: Box::new(take(&mut nodes[0])),
         }),
         _ => Err(CIParserError::NodeFull(nodes)),
     }
@@ -201,7 +187,6 @@ impl Parser for CINewReplParser {
         let mut stream = TokenStream::new(tokens.into_iter());
 
         if self.infix_repl {
-            // { ... }
             let result = parse_virtual_infix(&mut stream)?;
             ensure_stream_ended(&mut stream)?;
             return Ok(result);

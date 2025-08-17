@@ -1,6 +1,6 @@
-use std::{fs, rc::Rc};
+use std::rc::Rc;
 
-use crate::{ast::{AstNode, Function, Value}, env::Environment, native_fn, parser_types::Parser, parsers::{CIEvalError, CIFileEvaluator, CIFullFileParser}};
+use crate::{ast::{AstNode, Function, Value}, env::Environment, native_fn, parsers::{CIEvalError, CIFileEvaluator}};
 
 pub fn prelude_environment(env: Environment) -> Environment {
     let env = env.insert(
@@ -13,7 +13,7 @@ pub fn prelude_environment(env: Environment) -> Environment {
                             move |_on_true_node: AstNode| {
                                 Ok(AstNode::Function(Function::Native(Rc::new(
                                     move |on_false_node: AstNode| {
-                                        Ok(on_false_node.clone())
+                                        Ok(on_false_node)
                                     },
                                 ))))
                             },
@@ -47,7 +47,7 @@ pub fn prelude_environment(env: Environment) -> Environment {
         "str_concat",
         AstNode::Function(Function::Native(Rc::new(|s2: AstNode| {
                 Ok(AstNode::Function(Function::Native(Rc::new(move |s1: AstNode| {
-                    Ok(AstNode::Value(Value::String(format!("{s1}{s2}"))))
+                    Ok(AstNode::Value(Value::String(format!("{s1}{s2}")))) // Format as display because we don't want strings to have quotes
                 }))))
         })))
     );
@@ -87,21 +87,9 @@ pub fn prelude_environment(env: Environment) -> Environment {
                 other => return Err(CIEvalError::UnexpectedValue(Box::new(other)))
             };
 
-            let source = fs::read_to_string(&filename)
-                .map_err(|_| CIEvalError::NoSuchFile(filename))?;
-
-            let parser = CIFullFileParser::default();
-                let parsed_nodes = match parser.parse(source.chars().collect()) {
-                    Ok(a) => a,
-                    Err(e) => return Err(CIEvalError::FileParseError(Box::new(e)))
-                };
-
-                // Evaluate each node in the current env
-                let evaluator = CIFileEvaluator::new(env);
-                let _nodes = evaluator.parse(parsed_nodes)
-                    .map_err(|e| CIEvalError::FileParseError(Box::new(e)))?;
-
-                Ok((AstNode::Value(Value::Nil), evaluator.take_env()))
+            let eval = CIFileEvaluator::new(env);
+            eval.load_file(filename)?;
+            Ok((AstNode::Value(Value::Nil), eval.take_env()))
         })))
     );
 
