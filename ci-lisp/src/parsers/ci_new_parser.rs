@@ -39,11 +39,7 @@ fn parse_paren(
             car: Box::new(take(&mut items[0])),
             cdr: Box::new(take(&mut items[1]))
         }),
-        3 => {
-            if let AstNode::Value(Value::Symbol(s)) = &items[0] && s != "fn" {
-                return Err(CIParserError::NodeFull(items));
-            }
-
+        3 if matches!(&items[0], AstNode::Value(Value::Symbol(s)) if s == "fn") => {
             let arg_ident = match take(&mut items[1]) {
                 AstNode::Value(Value::Ident(name)) => name,
                 a => return Err(CIParserError::UnexpectedToken(Box::new(IntermediateToken::AstNode(a)))),
@@ -54,7 +50,20 @@ fn parse_paren(
                 body: Box::new(take(&mut items[2]))
             })
         }
-        _ => Err(CIParserError::NodeFull(items))
+        _n => {
+            let mut iter = items.into_iter();
+            if let Some(first) = iter.next() {
+                Ok(iter.fold(first, |func, arg| AstNode::Par {
+                    car: Box::new(func),
+                    cdr: Box::new(arg)
+                }))
+                
+            } else {
+                // Empty Node
+                Ok(AstNode::Value(Value::Nil))
+            }
+        }
+        // _ => Err(CIParserError::NodeFull(items))
     }
 }
 
