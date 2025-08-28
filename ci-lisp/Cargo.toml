@@ -1,8 +1,12 @@
 [package]
 name = "ci-lisp"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
+
+[features]
+clap_parser_mode = ["dep:clap"]
 
 [dependencies]
 im = "15.1.0"
-thiserror = "2.0.13"
+thiserror.workspace = true
+clap = {optional = true, workspace = true}

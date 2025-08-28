@@ -11,18 +11,18 @@ cd ci/ci-lisp
 Now you can run it:
 ```
 $ cargo run -- --help
-Usage: ci-lisp [OPTIONS]
+Usage: ci-term [OPTIONS]
 
 Options:
-  -i <PRELOAD>      Name of library to preload
-  -m                Treat every line as an infix {...}
-      --math        Enable built-in math functions. eg. add, sub, inc, dec, etc
-  -h, --help        Print help
-  -V, --version     Print version
+  -i <INCLUDE>                     Name of library to include. Pass multiple times for multiple libraries
+  -m, --parser-mode <PARSER_MODE>  Treat line as an infix {} or as parens () [default: normal] [possible values: normal, virtual-infix, virtual-paren]
+      --no-math                    Disable built-in math functions. eg. add, sub, inc, dec, etc
+  -h, --help                       Print help
+  -V, --version                    Print version
 ```
 
 For the full ci-lisp experience, try this command
 ```
-cargo run -- --math -i ../lib/ext_math.ci ../lib/ext_symbols.ci -m
+cargo run -- -i ../lib/prelude.ci
 ```
 

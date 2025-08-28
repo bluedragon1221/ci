@@ -14,7 +14,7 @@ mod ci_repl_evaluator;
 pub use ci_repl_evaluator::CIReplEvaluator;
 
 mod ci_new_parser;
-pub use ci_new_parser::{CINewReplParser, CINewFileParser};
+pub use ci_new_parser::{CINewReplParser, CINewFileParser, ParserConfig, ParserMode};
 
 // ---
 

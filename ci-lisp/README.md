@@ -12,7 +12,7 @@ Here's an overview of the ci-lisp language.
 
 ### Math
 Functions can only take one argument.
-For operations that need to take multiple arguments, we use currying or pairs
+For operations that need to take multiple arguments, we use currying.
 
 You can think of curried math operators as "do this to that".
 For example, "add 2 to 3":
@@ -45,8 +45,14 @@ Now we can call it just like any other function:
 6
 ```
 
+If a group of parens contains more than two arguments, the parser assumes you are trying to curry.
+This feature lets you skip some parentheses in your code.
+For example, `(add 2 3)` is equivelant to `((add 2) 3)`.
+The "counterintuitive" order is preserved. `(sub 3 2)` means 2 - 3, not 3 - 2.
+For the remainder of the guide, we will use this shorthand notation for currying.
+
 ### Functions
-You define a function in this form: `((def body) 'name)`.
+You define a function in this form: `(def body 'name)`.
 Yes, it might seem a little backwards to put the body before the name, but it makes sense once we introduce infix syntax later.
 This also introduces quote `'` syntax.
 Quoting means that you are refering to the _literal symbol_.
@@ -59,29 +65,38 @@ In these cases, infix syntax can help.
 
 For example, in math:
 ```lisp
-{3 add 2}
-{7 sub 4}
+〉{3 add 2}
+5
+〉{7 sub 4}
+3
 ```
 
 The define function can also be written using infix syntax:
 ```lisp
-{'my_fn def (add 3)}
+〉{'my_fn def (add 3)}
+nil
 ```
 
-The library `lib/ext_symbols.ci` defines symbolic equivalents for many common functions, such as add, sub, and def:
+The prelude library defines symbolic equivalents for many common functions, such as add, sub, and def:
 ```lisp
-(include "lib/ext_symbols.ci")
-
-{3 + 2}
-{7 - 4}
-{'my_fn = (add 3)}
+〉{'my_fn = (add 3)}
+nil
 ```
 
-Launching the repl with `-m` enables infix-repl mode, where it treats every line as an infix.
+Launching the repl with `--parser-mode virtual-infix` enables virtual-infix mode, where it treats every line as an infix.
 That means you can type lines like this:
 ```
-'g = 7
-'b = {g + 2}
+〉'g = 7
+nil
+〉'b = {g + 2}
+nil
+```
+Alternatively, you can enable virtual-paren mode, which treats every line as a parens:
+```lisp
+〉def 3 'a
+nil
+〉add a 27
+30
 ```
 
 ### Datatypes
@@ -89,15 +104,18 @@ All complex datatypes are [church-encoded](https://en.wikipedia.org/wiki/Church_
 This means something like a pair is really just a special function that other functions know how to handle.
 You can see this in the standard library, in the definition for `cons`, the function that makes a pair:
 ```lisp
-{'cons = (fn 'b (fn 'a (fn 'u ((u a) b))))}
-((cons "last") "first")
+〉{'cons = (fn 'b (fn 'a (fn 'u ((u a) b))))}
+nil
+〉((cons "last") "first")
+<user fn u>
 ```
 
 ![Wait, it's all just functions!? Always has been](./fns_meme.jpg)
 
 `ext_symbols` provides us with sugar for making pairs:
 ```
-{'g = {3 : 2}}
+〉{'g = {3 : 2}}
+nil
 ```
 
 #### Lists
@@ -108,23 +126,24 @@ Lists are constructed using cons-pairs, just like in lisp:
 
 This is annoying, so we have a special syntax for lists:
 ```lisp
-{'l = [1 2 3 4 5]}
+〉{'l = [1 2 3 4 5]}
+nil
 ```
 Much cleaner!
 
 You can get the nth item of a list (indicies start at 0):
 ```lisp
-((nth 3) l)
+〉(nth 3 l)
 ```
 
 #### Fractions
-Fractions are a first-class citizen of ci-lisp.
+Fractions are a first-class citizen in ci-lisp.
 
 ```lisp
-〉'f = ((frac 2) 3)
+〉'f = (frac 2 3)
 nil
 〉(fmt_frac f)
-3/2
+"3/2"
 ```
 
 `ext_symbols` provides `/` for constructing a fraction:
@@ -151,7 +170,7 @@ You can compose functions using `compose`:
 nil
 〉'g = (mul 3)
 nil
-〉'h = ((compose g) f)
+〉'h = (compose g f)
 nil
 〉(h 1)
 5
@@ -184,7 +203,7 @@ When calling `map`, pass the function, then the data, like so:
 ```lisp
 〉'a = [1 2 3 4 5]
 nil
-〉'b = ((map (fn 'x {x + 2})) a)
+〉'b = (map (fn 'x {x + 2}) a)
 nil
 〉(fmt_list b)
 "[ 3 4 5 6 7 ]"
@@ -221,7 +240,7 @@ From that information, we figure out that a sum function might look like this (I
 ```lisp
 〉'f = (fn 'x (fn 'acc {x + acc}))
 nil
-〉'sum-lst = ((foldr f) 0)
+〉'sum_lst = (foldr f 0)
 nil
 〉(sum_lst [1 2 3 4 5])
 15
@@ -229,7 +248,7 @@ nil
 
 For `foldl`, lets look at the library definition for `fmt_list` (slightly modified), which uses the `foldl` function:
 ```lisp
-{'fmt_list_inner = ((foldl (fn 'acc (fn 'x {acc .. {" " .. x}}))) "")}
+{'fmt_list_inner = (foldl (fn 'acc (fn 'x {acc .. {" " .. x}})) "")}
 {'fmt_list = (fn 'lst {"[" .. {(fmt_list_inner lst) .. " ]"}})}
 ```
 
@@ -242,7 +261,7 @@ See [this Stack Overflow post](https://stackoverflow.com/questions/33304408/is-i
 As an example of `foldr` with lists, lets look at the library definition of `map`, which is defined using foldr.
 ```lisp
 {'map = (fn 'f
-  ((foldr (fn 'x (fn 'acc {(f x) : acc}))) [])
+  (foldr (fn 'x (fn 'acc {(f x) : acc})) [])
 )}
 ```
 If you think about it, its kinda backwards.

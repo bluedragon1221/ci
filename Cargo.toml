@@ -3,5 +3,9 @@ resolver = "3"
 members = [
   "ci-lisp",
   "ci-gui",
-  "ci-term"
-]
+  "ci-term",
+  "ci-cli"]
+
+[workspace.dependencies]
+thiserror = "2.0.13"
+clap = { version = "4.5.43", features = ["derive"] }

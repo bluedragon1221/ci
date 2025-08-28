@@ -47,10 +47,9 @@ impl std::fmt::Display for Value {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum Token {
     Value(Value),
-    Hash,
     LParen,
     RParen,
     LCurly,
@@ -60,11 +59,25 @@ pub enum Token {
     EOF,
 }
 
+impl std::fmt::Debug for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Token::Value(a) => write!(f, "{:?}", a),
+            Token::LParen => write!(f, "("),
+            Token::RParen => write!(f, ")"),
+            Token::LCurly => write!(f, "{{"),
+            Token::RCurly => write!(f, "}}"),
+            Token::LBracket => write!(f, "["),
+            Token::RBracket => write!(f, "]"),
+            Token::EOF => Ok(()),
+        }
+    }
+}
+
 impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Token::Value(a) => write!(f, "{}", a),
-            Token::Hash => write!(f, "#"),
             Token::LParen => write!(f, "("),
             Token::RParen => write!(f, ")"),
             Token::LCurly => write!(f, "{{"),
@@ -98,7 +111,6 @@ impl Token {
 pub enum IntermediateToken {
     LParen(i32),
     Value(Value),
-    Hash,
     RParen(i32),
     LCurly(i32),
     RCurly(i32),

@@ -16,16 +16,16 @@ $ cargo run -- --help
 Usage: ci-gui [OPTIONS]
 
 Options:
-  -i <PRELOAD>      Name of library to preload
-  -m                Treat every line as an infix {...}
-      --math        Enable built-in math functions. eg. add, sub, inc, dec, etc
-  -h, --help        Print help
-  -V, --version     Print version
+  -i <INCLUDE>                     Name of library to include. Pass multiple times for multiple libraries
+  -m, --parser-mode <PARSER_MODE>  Treat line as an infix {} or as parens () [default: normal] [possible values: normal, virtual-infix, virtual-paren]
+      --no-math                    Disable built-in math functions. eg. add, sub, inc, dec, etc
+  -h, --help                       Print help
+  -V, --version                    Print version
 ```
 
 For the full ci-gui experience, try this command:
 ```sh
-cargo run -- --math -i ../lib/ext_math.ci -i ../lib/ext_symbols.ci -m
+cargo run -- -i ../lib/prelude.ci
 ```
 
 ## Overview
@@ -35,8 +35,6 @@ Pressing enter inside a cell will evaluate it, and create a new cell.
 
 Keybindings:
 - `Enter`: Evaluate the current cell, and create a new one if it makes sense to do so
-- `Tab`/`Shift+Tab`: Jump between cells
-- `Ctrl+j`: Create a new cell without evaluating the current one
+- `Up`/`Down`: Jump between cells
 - `Ctrl+d`: Delete the current cell
 - `Ctrl+l`: Clear the current cell without deleting it
-

@@ -1,0 +1,9 @@
+[package]
+name = "ci-cli"
+version = "0.2.0"
+edition = "2024"
+
+[dependencies]
+ci-lisp = { path = "../ci-lisp", features = ["clap_parser_mode"] }
+clap.workspace = true
+ 

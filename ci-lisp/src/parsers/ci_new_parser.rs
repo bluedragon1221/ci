@@ -6,7 +6,7 @@ use crate::{
 };
 
 pub struct TokenStream<I: Iterator<Item = IntermediateToken>> {
-    iter: I,
+    iter: I
 }
 
 impl<I: Iterator<Item = IntermediateToken>> TokenStream<I> {
@@ -17,21 +17,23 @@ impl<I: Iterator<Item = IntermediateToken>> TokenStream<I> {
     pub fn next(&mut self) -> Option<IntermediateToken> {
         self.iter.next()
     }
+
+    pub fn collect_until_terminator<F>(&mut self, mut terminator: F) -> Result<Vec<AstNode>, CIParserError>
+    where
+        F: FnMut(&I::Item) -> bool
+    {
+        let mut items = Vec::new();
+
+        while let Some(tok) = self.next() {
+            if terminator(&tok) { break; }
+            items.push(parse_token(tok, self)?)
+        }
+
+        Ok(items)
+    }
 }
 
-fn parse_paren(
-    stream: &mut TokenStream<impl Iterator<Item = IntermediateToken>>,
-    level: i32,
-) -> Result<AstNode, CIParserError> {
-    let mut items = Vec::new();
-
-    while let Some(tok) = stream.next() {
-        match tok {
-            IntermediateToken::RParen(l) if l == level => break,
-            other => items.push(parse_token(other, stream)?),
-        }
-    }
-
+fn parse_paren_nodes(mut items: Vec<AstNode>) -> Result<AstNode, CIParserError> {
     match items.len() {
         0 => Ok(AstNode::Value(Value::Nil)),
         1 => Ok(take(&mut items[0])),
@@ -67,19 +69,22 @@ fn parse_paren(
     }
 }
 
-fn parse_infix(
+fn parse_paren(
     stream: &mut TokenStream<impl Iterator<Item = IntermediateToken>>,
     level: i32,
 ) -> Result<AstNode, CIParserError> {
-    let mut nodes = Vec::new();
+    let items = stream.collect_until_terminator(|tok| matches!(tok, IntermediateToken::RParen(l) if l == &level))?;
+    parse_paren_nodes(items)
+}
 
-    while let Some(tok) = stream.next() {
-        match tok {
-            IntermediateToken::RCurly(l) if l == level => break,
-            other => nodes.push(parse_token(other, stream)?),
-        }
-    }
+fn parse_virtual_paren(
+    stream: &mut TokenStream<impl Iterator<Item = IntermediateToken>>
+) -> Result<AstNode, CIParserError> {
+    let items = stream.collect_until_terminator(|tok| matches!(tok, IntermediateToken::EOF))?;
+    parse_paren_nodes(items)
+}
 
+fn parse_infix_nodes(mut nodes: Vec<AstNode>) -> Result<AstNode, CIParserError> {
     match nodes.len() {
         0 => Ok(AstNode::Value(Value::Nil)),
         1 => Ok(take(&mut nodes[0])),
@@ -94,22 +99,48 @@ fn parse_infix(
             }),
             cdr: Box::new(take(&mut nodes[0])),
         }),
+        5 => Ok(AstNode::Par {
+            // {f +/ g -/ h} => ((-/ h) ((+/ g) f))
+            car: Box::new(AstNode::Par {
+                car: Box::new(take(&mut nodes[3])),
+                cdr: Box::new(take(&mut nodes[4]))
+            }),
+            cdr: Box::new(AstNode::Par {
+                car: Box::new(AstNode::Par {
+                    car: Box::new(take(&mut nodes[1])),
+                    cdr: Box::new(take(&mut nodes[2]))
+                }),
+                cdr: Box::new(take(&mut nodes[0]))
+            })
+        }),
         _ => Err(CIParserError::NodeFull(nodes)),
     }
+}
+
+fn parse_infix(
+    stream: &mut TokenStream<impl Iterator<Item = IntermediateToken>>,
+    level: i32,
+) -> Result<AstNode, CIParserError> {
+    let nodes = stream.collect_until_terminator(|tok| {
+        matches!(tok, IntermediateToken::RCurly(l) if *l == level)
+    })?;
+    parse_infix_nodes(nodes)
+}
+
+fn parse_virtual_infix(
+    stream: &mut TokenStream<impl Iterator<Item = IntermediateToken>>
+) -> Result<AstNode, CIParserError> {
+    let nodes = stream.collect_until_terminator(|tok| {
+        matches!(tok, IntermediateToken::EOF)
+    })?;
+    parse_infix_nodes(nodes)
 }
 
 fn parse_list(
     stream: &mut TokenStream<impl Iterator<Item = IntermediateToken>>,
     level: i32,
 ) -> Result<AstNode, CIParserError> {
-    let mut items = Vec::new();
-
-    while let Some(tok) = stream.next() {
-        match tok {
-            IntermediateToken::RBracket(l) if l == level => break,
-            other => items.push(parse_token(other, stream)?),
-        }
-    }
+    let items = stream.collect_until_terminator(|tok| matches!(tok, IntermediateToken::RBracket(l) if l == &level))?;
 
     let mut result = AstNode::Value(Value::Nil);
 
@@ -140,36 +171,6 @@ fn parse_token(
     }
 }
 
-fn parse_virtual_infix(
-    stream: &mut TokenStream<impl Iterator<Item = IntermediateToken>>,
-) -> Result<AstNode, CIParserError> {
-    let mut nodes = Vec::new();
-
-    while let Some(tok) = stream.next() {
-        match tok {
-            IntermediateToken::EOF => break,
-            other => nodes.push(parse_token(other, stream)?),
-        }
-    }
-
-    match nodes.len() {
-        0 => Ok(AstNode::Value(Value::Nil)),
-        1 => Ok(take(&mut nodes[0])),
-        2 => Ok(AstNode::Par {
-           car: Box::new(take(&mut nodes[0])),
-           cdr: Box::new(take(&mut nodes[1])) 
-        }),
-        3 => Ok(AstNode::Par {
-            car: Box::new(AstNode::Par {
-                car: Box::new(take(&mut nodes[1])),
-                cdr: Box::new(take(&mut nodes[2])),
-            }),
-            cdr: Box::new(take(&mut nodes[0])),
-        }),
-        _ => Err(CIParserError::NodeFull(nodes)),
-    }
-}
-
 fn ensure_stream_ended<I: Iterator<Item = IntermediateToken>>(stream: &mut TokenStream<I>) -> Result<(), CIParserError> {
     match stream.next() {
         None | Some(IntermediateToken::EOF) => Ok(()),
@@ -179,12 +180,26 @@ fn ensure_stream_ended<I: Iterator<Item = IntermediateToken>>(stream: &mut Token
 
 #[derive(Default)]
 pub struct CINewReplParser {
-    infix_repl: bool
+    cfg: ParserConfig
+}
+
+#[derive(Default, Clone)]
+#[cfg_attr(feature = "clap_parser_mode", derive(clap::ValueEnum))]
+pub enum ParserMode {
+    #[default]
+    Normal,
+    VirtualInfix,
+    VirtualParen
+}
+
+#[derive(Default, Clone)]
+pub struct ParserConfig {
+    pub parser_mode: ParserMode,
 }
 
 impl CINewReplParser {
-    pub fn new(infix_repl: bool) -> Self {
-        Self { infix_repl }
+    pub fn new(cfg: ParserConfig) -> Self {
+        Self { cfg: cfg }
     }
 }
 
@@ -195,10 +210,18 @@ impl Parser for CINewReplParser {
     fn parse(&self, tokens: Vec<IntermediateToken>) -> Result<AstNode, CIParserError> {
         let mut stream = TokenStream::new(tokens.into_iter());
 
-        if self.infix_repl {
-            let result = parse_virtual_infix(&mut stream)?;
-            ensure_stream_ended(&mut stream)?;
-            return Ok(result);
+        match self.cfg.parser_mode {
+            ParserMode::Normal => (),
+            ParserMode::VirtualInfix => {
+                let result = parse_virtual_infix(&mut stream)?;
+                ensure_stream_ended(&mut stream)?;
+                return Ok(result);
+            },
+            ParserMode::VirtualParen => {
+                let result = parse_virtual_paren(&mut stream)?;
+                ensure_stream_ended(&mut stream)?;
+                return Ok(result);
+            }
         }
 
         match stream.next() {

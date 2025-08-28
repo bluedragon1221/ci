@@ -1,4 +1,5 @@
 use ci_lisp::{parser_types::SeqParsers, parsers::{CIIntermediateTokenizer, CINewReplParser, CIReplEvaluator, CIStreamingLexer}};
+use eframe::egui;
 
 use crate::LispEvalBlock;
 
@@ -12,7 +13,7 @@ pub struct LispEditor {
 }
 
 impl LispEditor {
-        pub fn new(evaluator: LispEditorParser) -> Self {
+    pub fn new(evaluator: LispEditorParser) -> Self {
         let mut this = Self {
             block: vec![LispEvalBlock::default()],
             selected_block: 0,
@@ -64,6 +65,8 @@ impl LispEditor {
 
                     if self.selected_block == (self.block.len() - 1) {
                         self.add_block();
+                    } else {
+                        self.next_block();
                     }
                 }
                 egui::Event::Key {key: egui::Key::ArrowDown, pressed: true, ..} => {

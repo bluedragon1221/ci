@@ -1,14 +1,16 @@
 [package]
 name = "ci-gui"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 
 [dependencies]
-egui = "0.32.0"
-eframe = { version = "0.32.0", features = [
+ci-lisp = { path = "../ci-lisp" }
+ci-cli = { path = "../ci-cli" }
+
+eframe = { version = "0.32.0", default-features = false, features = [
   "default_fonts",
   "wayland",
-] }
+  "glow"
+]}
 
-ci-lisp = { path = "../ci-lisp" }
-clap = { version = "4.5.43", features = ["derive"] }
+clap.workspace = true

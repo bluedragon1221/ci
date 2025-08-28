@@ -1,7 +1,24 @@
+((def (fn 'f (fn 'x (fn 'y ((f y) x))))) 'flip)
+
+(def builtin__eq 'eq)
+(def builtin__int_lt 'lt)
+(def builtin__int_add 'add)
+(def builtin__int_sub 'sub)
+(def builtin__int_mul 'mul)
+
+(def eq '==)
+
+(def lt '<)
+(def add '+)
+(def sub '-)
+(def mul '*)
+
 ("Pointfree stuff")
 ((def ((doc "Create the composition (f (g x)) from function arguments g and f") (fn 'g (fn 'f (fn 'x (f (g x))))))) 'compose)
 ((def (fn 'f (fn 'x (f x)))) 'pipe)
-((def (fn 'f (fn 'x (fn 'y ((f y) x))))) 'flip)
+
+(def compose '.)
+(def pipe '|> )
 
 ("// SKI combinator calculus")
 ((def (fn 'f (fn 'g (fn 'a ((f a) (g a)))))) 'fork) ("aka S")
@@ -15,10 +32,10 @@
 'Z)
 
 ((def (fn 'x (fn 'f (f x)))) 'let)
+(def def '= )
 
 ("== Booleans")
 ((def (fn 'x (((if x) nil) t))) 'not)
-
 ((def (fn 'x (fn 'y
   (((if x) y) nil)
 ))) 'and)
@@ -26,14 +43,12 @@
   (((if x) nil) y)
 ))) 'or)
 
-((def builtin__int_add) 'add)
-((def builtin__int_sub) 'sub)
-((def builtin__int_mul) 'mul)
-
 ("== String Manipulation")
 ((def (fn 'sep (fn 'b (fn 'a
   {a str_concat {sep str_concat b}}
 )))) 'join)
+
+(def str_concat '..)
 
 ("== Cons pairs")
 ((def ((doc "Constructs a pair, given two elements") (fn 'b (fn 'a (fn 'cons_u ((cons_u a) b)))))) 'cons)
@@ -41,66 +56,22 @@
 ((def ((doc "Gets the second/last element of a given pair") (fn 'p (p (fn 'cdr_x (fn 'y y)))))) 'cdr)
 ((def ((doc "Reverses a given pair. `{a : b}` => `{b : a}`") (fn 'p ((cons (car p)) (cdr p))))) 'swap)
 
+(def cons ':)
+
 ((def ((doc "Formats a pair as a string to view its contents") (fn 'p
   {"{" (join ({(car p) (join " : ") (cdr p)})) "}"}
 ))) 'fmt_pair)
 
-("== Fractions")
-((def ((doc "Given an integer dividend and divisor, compute their quotient and remainder, returned as a tuple {quotient : remainder}") ((Z (fn 'divmod_inner (fn 'q (fn 'divisor (fn 'dividend
- ((((if {dividend lt divisor})
-    (fn '_ {q cons dividend}))
-    (fn '_ (((divmod_inner (inc q)) divisor) {dividend sub divisor})))
-  nil)
-))))) 0))) 'divmod)
-
-((def ((flip ((compose divmod) compose)) car)) 'div)
-((def ((flip ((compose divmod) compose)) cdr)) 'mod)
-
-((def (Z (fn 'gcd (fn 'a (fn 'b
-  ((((if {b eq 0})
-     (fn '_ a))
-     (fn '_ ((gcd b) {a mod b})))
-   nil)
-))))) 'gcd)
-
-((def ((doc "Create a new fraction, given a numerator and denominator") (fn 'd (fn 'n {'frac cons {n cons d}})))) 'frac)
-((def ((compose car) (eq 'frac))) 'is_frac)
-
-((def ((compose cdr) car)) 'num)
-((def ((compose cdr) cdr)) 'denom)
-
-((def ((doc "Add two fractions") (fn 'b (fn 'a
-  (fsimplify
-    {{{(num a) mul (denom b)} add {(num b) mul (denom a)}} frac {(denom a) mul (denom b)}}
-))))) 'fadd)
-
-((def ((doc "Subtract two fractions") (fn 'b (fn 'a
-  (fsimplify
-    {{{(num a) mul (denom b)} sub {(num b) mul (denom a)}} frac {(denom a) mul (denom b)}}
-))))) 'fsub)
-
-((def ((doc "Multiply two fractions") (fn 'b (fn 'a
-  {{(num a) mul (num b)} frac {(denom a) mul (denom b)}}
-)))) 'fmul)
-
-((def ((doc "Simplify a given fraction") (fn 'f
-  ((let ((gcd (num f)) (denom f)))
-    (fn 'gcd {{(num f) div gcd} frac {(denom f) div gcd}})
-  )
-))) 'fsimplify)
-
-((def ((doc "Format a fraction as a string to view its contents")
-  ((fork ((compose denom) (join "/"))) num)
-)) 'fmt_frac)
-
 ("== Lists")
 ("use [1 2 3] to make a list")
+
+(def (flip (cons nil)) 'unit)
 
 ((def ((doc "Get the nth item of a list. List indices start at 0") (Z (fn 'nth (fn 'n (fn 'list
   (
     (((if {n eq 0})
       (fn '_ (car list)))
-      (fn '_ ((nth (dec n)) (cdr list))))
+      (fn '_ ((nth {n - 1}) (cdr list))))
   nil)
 )))))) 'nth)
 
@@ -108,23 +79,23 @@
   (
     (((if (not lst))
       (fn '_ n))
-      (fn '_ ((len_inner (inc n)) (cdr lst))))
+      (fn '_ ((len_inner {n + 1}) (cdr lst))))
   nil)
 )))) 0))) 'len)
 
 ((def ((doc "Create a list of length `n` filled with item `c`") (Z (fn 'repeat (fn 'n (fn 'c
   (
-    (((if {n eq 0})
-      (fn '_ []))
-      (fn '_ {c cons ((repeat (dec n)) c)}))
+    (if {n eq 0}
+      (const [])
+      (fn '_ {c cons ((repeat {n - 1}) c)}))
   nil)
 )))))) 'repeat)
 
 ((def ((doc "Create a list that counts from `low` to `high`") (Z (fn 'range (fn 'low (fn 'high
   (
     (((if {high lt low})
-      (fn '_ []))
-      (fn '_ {low cons ((range (inc low)) high)}))
+      (const []))
+      (fn '_ {low cons (range {low + 1} high)}))
   nil)
 )))))) 'range)
 
@@ -151,11 +122,11 @@ Args:
 Note: If you're working with lists, consider using foldr.
 This allows you to use `cons` in your accumulator function, which is much more efficient (O(1)) than trying to append an item (O(n)).
 ") (fn 'f (fn 'acc (fn 'lst
-  ((((foldr
-    (fn 'x (fn 'g (fn 'acc (g ((f acc) x))))) )
-    id)
-    lst)
-  acc)
+  (foldr
+    (fn 'x (fn 'g (fn 'acc (g ((f acc) x))))) 
+    id
+    lst
+    acc)
 ))))) 'foldl)
 
 ((def ((doc "Apply a function to every argument in a list
@@ -174,16 +145,67 @@ Args:
   ))) [])
 )) 'filter)
 
-((def ((doc "Format a list as a string to view its contents")
-  ((compose ((foldl (flip (join " "))) "[")) (str_concat " ]"))
-)) 'fmt_list)
+{'fmt_list = (fn 'l
+  {(foldl
+    (fn 'acc (fn 'x {acc (join " ") x}))
+    {"[" .. (car l)}
+    (cdr l)
+  ) |> (str_concat "]")}
+)}
 
-("== alists (Hashmaps)")
-((def (fn 'h {'alist cons h})) 'alist)
-((def (fn 'h {(car h) eq 'alist})) 'is_alist)
+("== Fractions")
+{'frac = (doc "Construct a fraction" (fn 'd (fn 'n
+  {'frac : {n : d}}
+)))}
+{'is_frac = {(eq 'frac) . car}}
+(def frac '/)
 
-((def (fn 'elem (fn 'h
-  (cdr
-    (car
-      ((filter (fn 'x {(car x) eq elem})) (cdr h))))
-))) 'get)
+(def {car . cdr} 'num)
+(def {cdr . cdr} 'denom)
+
+{'divmod = (doc "Given an integer dividend and divisor, compute their quotient and remainder, returned as tuple {quotient : remainder}"
+  (Z (fn 'dm (fn 'q (fn 'divisor (fn 'dividend
+    (if {dividend < divisor}
+      (fn '_ {q : dividend})
+      (fn '_ {{dividend - divisor} (dm (add 1 q)) divisor})
+    nil)
+  )))) 0)
+)}
+
+(def (flip {. . divmod} car) 'div)
+(def (flip {. . divmod} cdr) 'mod)
+
+(def mod '%)
+
+{'gcd = (Z (fn 'gcd (fn 'a (fn 'b
+  ((if {b == 0}
+    (fn '_ a)
+    (fn '_ (gcd b {a mod b})))
+  nil)
+))))}
+
+{'fadd = (doc "Add two fractions" (fn 'b (fn 'a
+  {{{{(num a) * (denom b)} + {(num b) * (denom a)}} / {(denom a) * (denom b)}} |> fsimplify}
+)))}
+(def fadd '+/)
+
+{'fsub = (doc "Subtract two fractions" (fn 'b (fn 'a
+  {{{{(num a) * (denom b)} - {(num b) * (denom a)}} / {(denom a) * (denom b)}} |> fsimplify}
+)))}
+(def fsub '-/)
+
+{'fmul = (doc "Multiply two fractions" (fn 'b (fn 'a
+  {{(num a) * (num b)} / {(denom a) * (denom b)}}
+)))}
+(def fmul '*/)
+
+{'fsimplify = (doc "Simplify a given fraction" (fn 'f
+  (let ((gcd (num f)) (denom f))
+    (fn 's {{(num f) div s} / {(denom f) div s}})
+  )
+))}
+
+{'format_frac = (doc "Format a fraction as a string"
+  (fork {(join "/") . denom} num)
+)}
+(def format_frac 'fmt/)

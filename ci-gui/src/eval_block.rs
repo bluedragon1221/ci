@@ -1,5 +1,5 @@
 use ci_lisp::{ast::{Function, Token, Value}, parser_types::Parser, parsers::CIStreamingLexer};
-use egui::Event;
+use eframe::egui;
 
 pub enum OutputType {
     Raw(Box<dyn std::fmt::Display>),
@@ -81,7 +81,7 @@ impl LispEvalBlock {
         }
     }
 
-    pub fn handle_input(&mut self, event: Event) {
+    pub fn handle_input(&mut self, event: egui::Event) {
         match event {
             egui::Event::Key {key: egui::Key::Backspace, pressed: true, ..} => self.handle_backspace(),
             egui::Event::Key {key: egui::Key::ArrowLeft, pressed: true, ..} => if self.cursor_pos > 0 {self.cursor_pos -= 1},
@@ -217,18 +217,22 @@ impl LispEvalBlock {
                 OutputType::Raw(display) => {
                     let output_color = egui::Color32::from_gray(180);
 
+                    ui.add_space(4.0);
+
                     let output_galley = ui.painter().layout_no_wrap(display.to_string(), output_font, output_color);
-                    let output_pos = egui::pos2(ui.cursor().min.x, ui.cursor().min.y + font_id.size + 4.0);
+                    let output_pos = egui::pos2(ui.cursor().min.x + 4.0, ui.cursor().min.y + font_id.size + 4.0);
                     ui.painter().galley(output_pos, output_galley.clone(), output_color);
-                    ui.add_space(font_id.size + output_galley.size().y + 28.0);
+                    ui.add_space(font_id.size + output_galley.size().y + 24.0);
                 },
                 OutputType::Error(e) => {
                     let output_color = egui::Color32::from_rgb(255, 80, 80);
 
+                    ui.add_space(4.0);
+
                     let output_galley = ui.painter().layout_no_wrap(e.to_string(), output_font, output_color);
-                    let output_pos = egui::pos2(ui.cursor().min.x, ui.cursor().min.y + font_id.size + 4.0);
+                    let output_pos = egui::pos2(ui.cursor().min.x + 4.0, ui.cursor().min.y + font_id.size + 4.0);
                     ui.painter().galley(output_pos, output_galley.clone(), output_color);
-                    ui.add_space(font_id.size + output_galley.size().y + 28.0);
+                    ui.add_space(font_id.size + output_galley.size().y + 24.0);
                 },
                 OutputType::Graph(_) => todo!(),
             }
